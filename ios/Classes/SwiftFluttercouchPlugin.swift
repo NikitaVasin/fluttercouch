@@ -10,6 +10,8 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
     registrar.addMethodCallDelegate(instance, channel: channel)
     let eventChannel = FlutterEventChannel(name: "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel", binaryMessenger: registrar.messenger())
     eventChannel.setStreamHandler(ReplicatorEventListener() as? FlutterStreamHandler & NSObjectProtocol)
+    let docEventChannel = FlutterEventChannel(name: "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener", binaryMessenger: registrar.messenger())
+    docEventChannel.setStreamHandler(DocumentChangeEventListener() as? FlutterStreamHandler & NSObjectProtocol)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -44,6 +46,12 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
         let id = call.arguments! as! String
         if let returnMap = self.mCbManager.getDocumentWithId(id: id) {
             result(NSDictionary(dictionary: returnMap))
+        }
+    case "getDocumentsWithKey":
+        if let arguments = call.arguments as? [String:Any],  let key = arguments["key"] as? String, let value = arguments["value"] as? String {
+            if let returnMap = self.mCbManager.getDocumentsWith(key: key, value: value) {
+                result(returnMap)
+            }
         }
     case "setReplicatorEndpoint":
         let endpoint = call.arguments! as! String

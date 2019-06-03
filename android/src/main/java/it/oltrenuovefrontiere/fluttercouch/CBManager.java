@@ -14,9 +14,18 @@ import com.couchbase.lite.ReplicatorConfiguration;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
 import com.couchbase.litecore.C4Replicator;
+import com.couchbase.lite.Query;
+import com.couchbase.lite.Expression;
+import com.couchbase.lite.DataSource;
+import com.couchbase.lite.SelectResult;
+import com.couchbase.lite.Meta;
+import com.couchbase.lite.QueryBuilder;
+import com.couchbase.lite.ResultSet;
+import com.couchbase.lite.Result;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,6 +85,32 @@ public class CBManager {
         }
         return resultMap;
     }
+
+    public Map<String, Object> getDocumentsWith(String key, String value) throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        HashMap<String, Object> resultMap = new HashMap<String, Object>();
+        Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
+            .from(DataSource.database(defaultDb))
+            .where(Expression.property(key).equalTo(Expression.string(value)));
+        try {
+            ResultSet result = query.execute();
+            ArrayList docs = new ArrayList();
+            String dbName = defaultDb.getName();
+            for (Result res: result.allResults()) {
+                HashMap<String, Object> ret = new HashMap<String, Object>();
+                Object doc = res.toMap().get(dbName);
+                ret.put("doc", doc);
+                ret.put("id", res.getString("id"));
+                docs.add(ret);
+            }
+            resultMap.put("docs", docs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            resultMap.put("docs", null);
+        }
+        return resultMap;
+    }
+
 
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
         DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);

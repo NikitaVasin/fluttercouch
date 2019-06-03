@@ -2,13 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:fluttercouch/document.dart';
+import 'package:meta/meta.dart';
 
 abstract class Fluttercouch {
   static const MethodChannel _methodChannel =
       const MethodChannel('it.oltrenuovefrontiere.fluttercouch');
 
-  static const EventChannel _replicationEventChannel =
-    const EventChannel("it.oltrenuovefrontiere.fluttercouch/replicationEventChannel");
+  static const EventChannel _replicationEventChannel = const EventChannel(
+      "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel");
+
+
+  static const EventChannel _documentChangeEventListener = const EventChannel(
+      "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener");
 
   Future<String> initDatabaseWithName(String _name) async {
     try {
@@ -22,7 +27,8 @@ abstract class Fluttercouch {
 
   Future<String> saveDocument(Document _doc) async {
     try {
-      final String result = await _methodChannel.invokeMethod('saveDocument', _doc.toMap());
+      final String result =
+          await _methodChannel.invokeMethod('saveDocument', _doc.toMap());
       return result;
     } on PlatformException {
       throw 'unable to save the document';
@@ -32,7 +38,8 @@ abstract class Fluttercouch {
   Future<String> saveDocumentWithId(String _id, Document _doc) async {
     try {
       final String result = await _methodChannel.invokeMethod(
-          'saveDocumentWithId', <String, dynamic>{'id': _id, 'map': _doc.toMap()});
+          'saveDocumentWithId',
+          <String, dynamic>{'id': _id, 'map': _doc.toMap()});
       return result;
     } on PlatformException {
       throw 'unable to save the document with set id $_id';
@@ -43,6 +50,22 @@ abstract class Fluttercouch {
     Map<dynamic, dynamic> _docResult;
     _docResult = await _getDocumentWithId(_id);
     return Document(_docResult["doc"], _docResult["id"]);
+  }
+
+  Future<List<Document>> getDocumentsWith(
+      {@required String key, @required String value}) async {
+    try {
+      final Map<dynamic, dynamic> result = await _methodChannel
+          .invokeMethod('getDocumentsWithKey', {"key": key, "value": value});
+      List<Document> documents = result["docs"] != null
+          ? result["docs"]
+              .map<Document>((v) => Document(v['doc'], v['id']))
+              .toList()
+          : null;
+      return documents;
+    } on PlatformException {
+      throw 'unable to get the document with key $key, value $value';
+    }
   }
 
   Future<String> setReplicatorEndpoint(String _endpoint) async {
@@ -67,7 +90,8 @@ abstract class Fluttercouch {
 
   Future<bool> setReplicatorContinuous(bool _continuous) async {
     try {
-      final bool result = await _methodChannel.invokeMethod('setReplicatorContinuous', _continuous);
+      final bool result = await _methodChannel.invokeMethod(
+          'setReplicatorContinuous', _continuous);
       return result;
     } on PlatformException {
       throw 'unable to set replicator continuous setting to $_continuous';
@@ -87,7 +111,8 @@ abstract class Fluttercouch {
 
   Future<String> setReplicatorSessionAuthentication(String _sessionID) async {
     try {
-      final String result = await _methodChannel.invokeMethod('setReplicatorSessionAuthentication', _sessionID);
+      final String result = await _methodChannel.invokeMethod(
+          'setReplicatorSessionAuthentication', _sessionID);
       return result;
     } on PlatformException {
       throw 'unable to set replicator basic authentication';
@@ -121,7 +146,7 @@ abstract class Fluttercouch {
   Future<Map<dynamic, dynamic>> _getDocumentWithId(String _id) async {
     try {
       final Map<dynamic, dynamic> result =
-      await _methodChannel.invokeMethod('getDocumentWithId', _id);
+          await _methodChannel.invokeMethod('getDocumentWithId', _id);
       return result;
     } on PlatformException {
       throw 'unable to get the document with id $_id';
@@ -130,5 +155,9 @@ abstract class Fluttercouch {
 
   void listenReplicationEvents(Function(dynamic) function) {
     _replicationEventChannel.receiveBroadcastStream().listen(function);
+  }
+
+  void listenDocumentChangeEvents(Function(dynamic) function) {
+    _documentChangeEventListener.receiveBroadcastStream().listen(function);
   }
 }
