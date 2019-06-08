@@ -15,8 +15,7 @@ class DocumentChangeEventListener: FlutterStreamHandler {
     
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         if let database = mCBManager.getDatabase() {
-            mListenerToken = database.addChangeListener({ [weak self] (change) in
-                guard let strongSelf = self else { return }
+            mListenerToken = database.addChangeListener({(change) in
                 for docId in change.documentIDs {
                     events(docId);
                 }

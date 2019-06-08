@@ -11,7 +11,6 @@ abstract class Fluttercouch {
   static const EventChannel _replicationEventChannel = const EventChannel(
       "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel");
 
-
   static const EventChannel _documentChangeEventListener = const EventChannel(
       "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener");
 
@@ -65,6 +64,31 @@ abstract class Fluttercouch {
       return documents;
     } on PlatformException {
       throw 'unable to get the document with key $key, value $value';
+    }
+  }
+
+  Future<List<Document>> getAllDocuments() async {
+    try {
+      final Map<dynamic, dynamic> result = await _methodChannel
+          .invokeMethod('getAllDocuments');
+      List<Document> documents = result["docs"] != null
+          ? result["docs"]
+              .map<Document>((v) => Document(v['doc'], v['id']))
+              .toList()
+          : null;
+      return documents;
+    } on PlatformException {
+      throw 'unable to get all documents';
+    }
+  }
+
+  Future purgeDocumentId(String docId) async {
+    try {
+      final bool result = await _methodChannel.invokeMethod(
+          'purgeDocument', docId);
+      return result;
+    } on PlatformException {
+      throw 'unable purge document';
     }
   }
 

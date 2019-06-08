@@ -87,7 +87,43 @@ class CBManager {
         }
         return resultMap;
     }
+
+
+    func getAllDocuments() -> NSDictionary {
+        let resultMap: NSMutableDictionary = NSMutableDictionary();
+        if let defaultDb: Database = getDatabase() {
+            let query = QueryBuilder
+                .select(SelectResult.all(), SelectResult.expression(Meta.id))
+                .from(DataSource.database(defaultDb))
+            do {
+                let result = try query.execute()
+                let docs = result.allResults().map{(result)->NSDictionary in
+                    let ret = NSMutableDictionary();
+                    if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
+                        ret["doc"] = doc.toDictionary();
+                        let id = result.string(forKey: "id");
+                        ret["id"] = id
+                    }
+                    return ret;
+                    };
+                resultMap["docs"] = docs;
+            } catch {
+                resultMap["docs"] = nil;
+            }
+        }
+        return resultMap;
+    }
     
+    func purgeDocument(docId: String) -> Bool {
+        if let defaultDb: Database = getDatabase() {
+            if let doc: Document = defaultDb.document(withID: docId) {
+                try! defaultDb.purgeDocument(doc);
+                return true;
+            }
+        }
+        return false;
+    }
+
     func initDatabaseWithName(name: String){
         if mDatabase.keys.contains(name) {
             defaultDatabase = name

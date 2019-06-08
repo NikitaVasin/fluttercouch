@@ -110,6 +110,13 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 result.error("errGet", "error getting the document with key: " + key, e.toString());
             }
             break;
+        case("getAllDocuments"): 
+            try {
+                result.success(mCbManager.getAllDocuments());
+            } catch (CouchbaseLiteException e) {
+                e.printStackTrace();
+            }
+            break;
         case ("setReplicatorEndpoint"):
             String _endpoint = call.arguments();
             try {

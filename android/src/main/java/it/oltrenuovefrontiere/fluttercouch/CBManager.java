@@ -111,6 +111,31 @@ public class CBManager {
         return resultMap;
     }
 
+    public Map<String, Object> getAllDocuments() throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        HashMap<String, Object> resultMap = new HashMap<String, Object>();
+        Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
+            .from(DataSource.database(defaultDb));
+        try {
+            ResultSet result = query.execute();
+            ArrayList docs = new ArrayList();
+            String dbName = defaultDb.getName();
+            for (Result res: result.allResults()) {
+                HashMap<String, Object> ret = new HashMap<String, Object>();
+                Object doc = res.toMap().get(dbName);
+                ret.put("doc", doc);
+                ret.put("id", res.getString("id"));
+                docs.add(ret);
+            }
+            resultMap.put("docs", docs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            resultMap.put("docs", null);
+        }
+        return resultMap;
+    }
+
+    
 
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
         DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);

@@ -53,6 +53,16 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
                 result(returnMap)
             }
         }
+    case "getAllDocuments": 
+        let returnMap = self.mCbManager.getAllDocuments() 
+        result(returnMap)
+    case "purgeDocument": 
+        let id = call.arguments! as! String
+        self.mCbManager.purgeDocument(docId: id) {
+            result(true);
+        } else {
+            result(false);
+        }
     case "setReplicatorEndpoint":
         let endpoint = call.arguments! as! String
         self.mCbManager.setReplicatorEndpoint(endpoint: endpoint)
