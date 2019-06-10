@@ -5,19 +5,23 @@ import 'package:fluttercouch/document.dart';
 import 'package:meta/meta.dart';
 
 abstract class Fluttercouch {
-  static const MethodChannel _methodChannel =
+  String dbName;
+  MethodChannel _methodChannel =
       const MethodChannel('it.oltrenuovefrontiere.fluttercouch');
 
-  static const EventChannel _replicationEventChannel = const EventChannel(
-      "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel");
+  EventChannel _replicationEventChannel;
 
-  static const EventChannel _documentChangeEventListener = const EventChannel(
-      "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener");
+  EventChannel _documentChangeEventListener;
 
   Future<String> initDatabaseWithName(String _name) async {
+    
     try {
-      final String result =
-          await _methodChannel.invokeMethod('initDatabaseWithName', _name);
+      this.dbName = _name;
+      final String result = await _methodChannel.invokeMethod('initDatabaseWithName', _name);
+        this._replicationEventChannel = EventChannel(
+      "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel/"+_name);
+      this._documentChangeEventListener = EventChannel(
+      "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener/"+_name);
       return result;
     } on PlatformException catch (e) {
       throw 'unable to init database $_name: ${e.message}';
@@ -27,7 +31,7 @@ abstract class Fluttercouch {
   Future<String> saveDocument(Document _doc) async {
     try {
       final String result =
-          await _methodChannel.invokeMethod('saveDocument', _doc.toMap());
+          await _methodChannel.invokeMethod('saveDocument', {"db": this.dbName, "document": _doc.toMap()});
       return result;
     } on PlatformException {
       throw 'unable to save the document';
@@ -38,7 +42,7 @@ abstract class Fluttercouch {
     try {
       final String result = await _methodChannel.invokeMethod(
           'saveDocumentWithId',
-          <String, dynamic>{'id': _id, 'map': _doc.toMap()});
+          <String, dynamic>{"db": this.dbName, 'id': _id, 'map': _doc.toMap()});
       return result;
     } on PlatformException {
       throw 'unable to save the document with set id $_id';
@@ -55,7 +59,7 @@ abstract class Fluttercouch {
       {@required String key, @required String value}) async {
     try {
       final Map<dynamic, dynamic> result = await _methodChannel
-          .invokeMethod('getDocumentsWithKey', {"key": key, "value": value});
+          .invokeMethod('getDocumentsWithKey', {"db": this.dbName, "key": key, "value": value});
       List<Document> documents = result["docs"] != null
           ? result["docs"]
               .map<Document>((v) => Document(v['doc'], v['id']))
@@ -70,7 +74,7 @@ abstract class Fluttercouch {
   Future<List<Document>> getAllDocuments() async {
     try {
       final Map<dynamic, dynamic> result = await _methodChannel
-          .invokeMethod('getAllDocuments');
+          .invokeMethod('getAllDocuments', {"db": this.dbName});
       List<Document> documents = result["docs"] != null
           ? result["docs"]
               .map<Document>((v) => Document(v['doc'], v['id']))
@@ -85,7 +89,7 @@ abstract class Fluttercouch {
   Future purgeDocumentId(String docId) async {
     try {
       final bool result = await _methodChannel.invokeMethod(
-          'purgeDocument', docId);
+          'purgeDocument', {"db": this.dbName, "id": docId});
       return result;
     } on PlatformException {
       throw 'unable purge document';
@@ -95,7 +99,7 @@ abstract class Fluttercouch {
   Future<String> setReplicatorEndpoint(String _endpoint) async {
     try {
       final String result =
-          await _methodChannel.invokeMethod('setReplicatorEndpoint', _endpoint);
+          await _methodChannel.invokeMethod('setReplicatorEndpoint', {"db": this.dbName, "endpoint":_endpoint});
       return result;
     } on PlatformException {
       throw 'unable to set target endpoint to $_endpoint';
@@ -105,7 +109,7 @@ abstract class Fluttercouch {
   Future<String> setReplicatorType(String _type) async {
     try {
       final String result =
-          await _methodChannel.invokeMethod('setReplicatorType', _type);
+          await _methodChannel.invokeMethod('setReplicatorType', {"db": this.dbName, "type":_type});
       return result;
     } on PlatformException {
       throw 'unable to set replicator type to $_type';
@@ -115,7 +119,7 @@ abstract class Fluttercouch {
   Future<bool> setReplicatorContinuous(bool _continuous) async {
     try {
       final bool result = await _methodChannel.invokeMethod(
-          'setReplicatorContinuous', _continuous);
+          'setReplicatorContinuous', {"db": this.dbName, "continuous":_continuous});
       return result;
     } on PlatformException {
       throw 'unable to set replicator continuous setting to $_continuous';
@@ -126,7 +130,7 @@ abstract class Fluttercouch {
       Map<String, String> _auth) async {
     try {
       final String result = await _methodChannel.invokeMethod(
-          'setReplicatorBasicAuthentication', _auth);
+          'setReplicatorBasicAuthentication', {"db": this.dbName, "auth":_auth});
       return result;
     } on PlatformException {
       throw 'unable to set replicator basic authentication';
@@ -136,7 +140,7 @@ abstract class Fluttercouch {
   Future<String> setReplicatorSessionAuthentication(String _sessionID) async {
     try {
       final String result = await _methodChannel.invokeMethod(
-          'setReplicatorSessionAuthentication', _sessionID);
+          'setReplicatorSessionAuthentication', {"db": this.dbName, "sessiodID": _sessionID});
       return result;
     } on PlatformException {
       throw 'unable to set replicator basic authentication';
@@ -145,7 +149,7 @@ abstract class Fluttercouch {
 
   Future<Null> initReplicator() async {
     try {
-      await _methodChannel.invokeMethod("initReplicator");
+      await _methodChannel.invokeMethod("initReplicator", {"db": this.dbName});
     } on PlatformException {
       throw 'unable to init replicator';
     }
@@ -153,7 +157,7 @@ abstract class Fluttercouch {
 
   Future<Null> startReplicator() async {
     try {
-      await _methodChannel.invokeMethod('startReplicator');
+      await _methodChannel.invokeMethod('startReplicator', {"db": this.dbName});
     } on PlatformException {
       throw 'unable to start replication';
     }
@@ -161,7 +165,7 @@ abstract class Fluttercouch {
 
   Future<Null> stopReplicator() async {
     try {
-      await _methodChannel.invokeMethod('stopReplicator');
+      await _methodChannel.invokeMethod('stopReplicator', {"db": this.dbName});
     } on PlatformException {
       throw 'unable to stop replication';
     }
@@ -170,7 +174,7 @@ abstract class Fluttercouch {
   Future<Map<dynamic, dynamic>> _getDocumentWithId(String _id) async {
     try {
       final Map<dynamic, dynamic> result =
-          await _methodChannel.invokeMethod('getDocumentWithId', _id);
+          await _methodChannel.invokeMethod('getDocumentWithId', {"db": this.dbName, "id":_id});
       return result;
     } on PlatformException {
       throw 'unable to get the document with id $_id';

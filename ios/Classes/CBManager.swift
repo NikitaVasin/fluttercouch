@@ -10,13 +10,13 @@ import Foundation
 import CouchbaseLiteSwift
 
 class CBManager {
-    static let instance = CBManager();
+    // static let instance = CBManager();
     private var mDatabase : Dictionary<String, Database> = Dictionary();
     private var mReplConfig : ReplicatorConfiguration! = nil;
     private var mReplicator : Replicator! = nil;
     private var defaultDatabase = "defaultDatabase";
     
-    private init() {}
+    init() {}
     
     func getDatabase() -> Database? {
         if let result = mDatabase[defaultDatabase] {

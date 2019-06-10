@@ -10,9 +10,14 @@ import CouchbaseLiteSwift
 
 class DocumentChangeEventListener: FlutterStreamHandler {
     
-    let mCBManager = CBManager.instance
+    var mCBManager:CBManager;
     var mListenerToken: ListenerToken?
     
+    init(manager:CBManager) {
+        self.mCBManager = manager;
+    }
+
+
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         if let database = mCBManager.getDatabase() {
             mListenerToken = database.addChangeListener({(change) in

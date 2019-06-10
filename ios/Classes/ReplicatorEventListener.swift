@@ -10,8 +10,12 @@ import CouchbaseLiteSwift
 
 class ReplicatorEventListener: FlutterStreamHandler {
     
-    let mCBManager = CBManager.instance
+    var mCBManager:CBManager;
     var mListenerToken: ListenerToken?
+    
+    init(manager:CBManager) {
+        self.mCBManager = manager;
+    }
     
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         mListenerToken = mCBManager.getReplicator().addChangeListener { (change) in
