@@ -31,8 +31,10 @@ public class QueryJson {
 
     private QueryMap queryMap;
     private Query query = null;
+    private CBManager cbManager;
 
-    QueryJson(JSONObject json) {
+    QueryJson(CBManager cbManager, JSONObject json) {
+        this.cbManager = cbManager;
         this.queryMap = new QueryMap(json);
     }
 
@@ -200,11 +202,11 @@ public class QueryJson {
     }
 
     private DataSource getDatasourceFromString(String name) {
-        return DataSource.database(CBManager.getInstance().getDatabase(name));
+        return DataSource.database(cbManager.getDatabase(name));
     }
 
     private DataSource getDatasourceFromString(String name, String as) {
-        return DataSource.database(CBManager.getInstance().getDatabase(name)).as(as);
+        return DataSource.database(cbManager.getDatabase(name)).as(as);
     }
 
     private SelectResult[] inflateSelectResultArray() {
