@@ -46,14 +46,65 @@ class CBManager {
         return mutableDocument.id
     }
     
-    func getDocumentWithId(id : String) -> NSDictionary? {
+    func replaceFilesFromAttachments(attarchments:NSDictionary, object:AnyObject,  key:String?) -> AnyObject {
+        if let dict = object as? NSDictionary {
+            let d:NSMutableDictionary = dict.mutableCopy() as! NSMutableDictionary
+            for (key, value) in dict {
+                let val = replaceFilesFromAttachments(attarchments: attarchments, object: value as AnyObject, key: key as? String)
+                d[key] = val
+            }
+            
+            return d as AnyObject
+        }
+        else if let array = object as? NSArray {
+            let a =  array.map{(value)->AnyObject in
+                return replaceFilesFromAttachments(attarchments: attarchments, object: value as AnyObject, key: nil)
+                } as AnyObject
+            return a
+        }
+        else {
+            if key == "file", let filePath = attarchments[object] {
+                return filePath as AnyObject
+            }
+        }
+        return object;
+    }
+    
+    
+    func processDoc (document: Document) -> NSDictionary? {
         let resultMap: NSMutableDictionary = NSMutableDictionary.init()
+        var retrievedDocument: NSMutableDictionary = NSMutableDictionary.init(dictionary: document.toDictionary())
+        if let attcahments = retrievedDocument.value(forKey: "_attachments") as? NSDictionary {
+            let attachmentsPath = NSMutableDictionary()
+            for (key, value) in attcahments {
+                if let blob = value as? Blob {
+                    attachmentsPath[key] = blob.filePath
+                }
+            }
+
+            retrievedDocument.removeObject(forKey: "_attachments")
+            if let d = replaceFilesFromAttachments(attarchments: attachmentsPath, object: retrievedDocument, key: nil) as? NSDictionary {
+                retrievedDocument = d.mutableCopy() as! NSMutableDictionary
+            }
+            
+
+        }
+        
+        
+        resultMap["id"] = document.id
+        resultMap["doc"] = retrievedDocument
+        return resultMap
+    }
+    
+    func getDocumentWithId(id : String) -> NSDictionary? {
+        var resultMap: NSMutableDictionary = NSMutableDictionary()
+        resultMap["id"] = id
+        resultMap["doc"] = NSDictionary()
         if let defaultDb: Database = getDatabase() {
             if let document: Document = defaultDb.document(withID: id) {
-                let retrievedDocument: NSDictionary = NSDictionary.init(dictionary: document.toDictionary())
-                // It is a repetition due to implementation of Document Dart Class
-                resultMap["id"] = id
-                resultMap["doc"] = retrievedDocument
+                if let d = processDoc(document: document) {
+                    resultMap = d.mutableCopy() as! NSMutableDictionary
+                }
             } else {
                 resultMap["id"] = id
                 resultMap["doc"] = NSDictionary.init()
@@ -74,8 +125,8 @@ class CBManager {
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
                     if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = doc.toDictionary();
-                        let id = result.string(forKey: "id");
+                        ret["doc"] = doc
+                        let id = result.string(forKey: "id")
                         ret["id"] = id
                     }
                     return ret;
@@ -100,8 +151,8 @@ class CBManager {
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
                     if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = doc.toDictionary();
-                        let id = result.string(forKey: "id");
+                        ret["doc"] = doc
+                        let id = result.string(forKey: "id")
                         ret["id"] = id
                     }
                     return ret;
