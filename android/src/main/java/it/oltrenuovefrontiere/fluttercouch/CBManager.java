@@ -30,19 +30,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CBManager {
-    private static final CBManager mInstance = new CBManager();
+
     private HashMap<String, Database> mDatabase = new HashMap<>();
     private ReplicatorConfiguration mReplConfig;
     private Replicator mReplicator;
     private String defaultDatabase = "defaultDatabase";
 
-    private CBManager() {
+    public CBManager() {
     }
-
-    public static CBManager getInstance() {
-        return mInstance;
-    }
-
+   
     public Database getDatabase() {
         return mDatabase.get(defaultDatabase);
     }
@@ -135,7 +131,13 @@ public class CBManager {
         return resultMap;
     }
 
-    
+    public void purgeDocument(String _id) throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        Document document = defaultDb.getDocument(_id);
+        if(document!=null){
+            defaultDb.purge(document);
+        }
+    }
 
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
         DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
