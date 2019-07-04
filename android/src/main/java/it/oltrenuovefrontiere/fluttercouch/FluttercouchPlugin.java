@@ -209,8 +209,6 @@ public class FluttercouchPlugin implements MethodCallHandler {
         }
     }
 
-    static CBManager instance;
-
     private CBManager getCBManager(String name){
         CBManager manager = managers.get(name);
         if(manager == null){
