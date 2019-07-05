@@ -1,5 +1,7 @@
 import Flutter
 import UIKit
+import CouchbaseLiteSwift
+import SSZipArchive
     
 public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
     // let mCbManager = CBManager()
@@ -35,6 +37,20 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
         }
         mCbManager!.initDatabaseWithName(name: name)
         result(String(name))
+    case "prebuildDatabase":
+        let arguments = call.arguments! as! [String:Any]
+        let dbName = arguments["db"] as! String
+        let assetPath = arguments["assetPath"] as! String
+        if let resourceName = assetPath.components(separatedBy: "/").last?.replacingOccurrences(of: ".zip", with: ""){
+            let zipPath = Bundle.main.path(forResource: resourceName, ofType: "zip")!
+            let unzipPath = DatabaseConfiguration().directory
+            if !Database.exists(withName: dbName) {
+                SSZipArchive.unzipFile(atPath:zipPath,toDestination:unzipPath)
+                result(true)
+            }else{
+                result(false)
+            }
+        }
     case "saveDocument":
         let arguments = call.arguments! as! [String:Any]
         let dbName = arguments["db"] as! String
@@ -47,7 +63,6 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
                 result(FlutterError.init(code: "errSave", message: "Error saving document", details: ""))
             }    
         }
-        
     case "saveDocumentWithId":
         let arguments = call.arguments! as! [String:Any]
         let dbName = arguments["db"] as! String

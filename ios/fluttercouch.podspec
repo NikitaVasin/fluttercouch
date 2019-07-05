@@ -16,6 +16,7 @@ A new flutter plugin project.
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   #s.dependency 'CouchbaseLite-Swift', '~> 2.1.0'
+  s.dependency 'SSZipArchive'
   s.preserve_paths = 'CouchbaseLiteSwift.framework'
   s.xcconfig = { 'OTHER_LDFLAGS' => '-framework CouchbaseLiteSwift' }
   s.vendored_frameworks = 'CouchbaseLiteSwift.framework'

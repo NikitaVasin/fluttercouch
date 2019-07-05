@@ -29,6 +29,7 @@ abstract class Fluttercouch {
   }
 
   Future<bool> prebuildDatabase(String assetPath, String _name) async{
+    this.dbName = _name;
     try {
       return await _methodChannel.invokeMethod('prebuildDatabase', {"db": _name, "assetPath": assetPath});
     } on PlatformException catch (e) {
