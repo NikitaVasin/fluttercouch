@@ -71,9 +71,9 @@ class CBManager {
     }
     
     
-    func processDoc (document: Document) -> NSDictionary? {
+    func processDoc (document: NSDictionary) -> NSDictionary? {
         let resultMap: NSMutableDictionary = NSMutableDictionary.init()
-        var retrievedDocument: NSMutableDictionary = NSMutableDictionary.init(dictionary: document.toDictionary())
+        var retrievedDocument: NSMutableDictionary = document.mutableCopy() as! NSMutableDictionary
         if let attcahments = retrievedDocument.value(forKey: "_attachments") as? NSDictionary {
             let attachmentsPath = NSMutableDictionary()
             for (key, value) in attcahments {
@@ -91,7 +91,7 @@ class CBManager {
         }
         
         
-        resultMap["id"] = document.id
+        resultMap["id"] = document["id"]
         resultMap["doc"] = retrievedDocument
         return resultMap
     }
@@ -102,7 +102,7 @@ class CBManager {
         resultMap["doc"] = NSDictionary()
         if let defaultDb: Database = getDatabase() {
             if let document: Document = defaultDb.document(withID: id) {
-                if let d = processDoc(document: document) {
+                if let d = processDoc(document: document.toDictionary() as NSDictionary) {
                     resultMap = d.mutableCopy() as! NSMutableDictionary
                 }
             } else {
@@ -125,7 +125,7 @@ class CBManager {
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
                     if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = doc
+                        ret["doc"] = processDoc(document: doc.toDictionary() as NSDictionary)
                         let id = result.string(forKey: "id")
                         ret["id"] = id
                     }
@@ -151,7 +151,7 @@ class CBManager {
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
                     if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = doc
+                        ret["doc"] = processDoc(document: doc.toDictionary() as NSDictionary)
                         let id = result.string(forKey: "id")
                         ret["id"] = id
                     }
