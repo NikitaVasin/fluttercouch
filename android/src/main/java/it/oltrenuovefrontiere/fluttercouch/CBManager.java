@@ -1,28 +1,31 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
+import android.content.Context;
+import android.util.Log;
+
 import com.couchbase.lite.BasicAuthenticator;
 import com.couchbase.lite.CouchbaseLiteException;
+import com.couchbase.lite.DataSource;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.DatabaseConfiguration;
 import com.couchbase.lite.Document;
 import com.couchbase.lite.Endpoint;
-import com.couchbase.lite.LogDomain;
-import com.couchbase.lite.LogLevel;
+import com.couchbase.lite.Expression;
+import com.couchbase.lite.Meta;
 import com.couchbase.lite.MutableDocument;
+import com.couchbase.lite.Query;
+import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Replicator;
 import com.couchbase.lite.ReplicatorConfiguration;
+import com.couchbase.lite.Result;
+import com.couchbase.lite.ResultSet;
+import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
-import com.couchbase.litecore.C4Replicator;
-import com.couchbase.lite.Query;
-import com.couchbase.lite.Expression;
-import com.couchbase.lite.DataSource;
-import com.couchbase.lite.SelectResult;
-import com.couchbase.lite.Meta;
-import com.couchbase.lite.QueryBuilder;
-import com.couchbase.lite.ResultSet;
-import com.couchbase.lite.Result;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -38,7 +41,7 @@ public class CBManager {
 
     public CBManager() {
     }
-   
+
     public Database getDatabase() {
         return mDatabase.get(defaultDatabase);
     }
@@ -86,13 +89,13 @@ public class CBManager {
         Database defaultDb = getDatabase();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
         Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
-            .from(DataSource.database(defaultDb))
-            .where(Expression.property(key).equalTo(Expression.string(value)));
+                .from(DataSource.database(defaultDb))
+                .where(Expression.property(key).equalTo(Expression.string(value)));
         try {
             ResultSet result = query.execute();
             ArrayList docs = new ArrayList();
             String dbName = defaultDb.getName();
-            for (Result res: result.allResults()) {
+            for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
                 ret.put("doc", doc);
@@ -111,12 +114,12 @@ public class CBManager {
         Database defaultDb = getDatabase();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
         Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
-            .from(DataSource.database(defaultDb));
+                .from(DataSource.database(defaultDb));
         try {
             ResultSet result = query.execute();
             ArrayList docs = new ArrayList();
             String dbName = defaultDb.getName();
-            for (Result res: result.allResults()) {
+            for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
                 ret.put("doc", doc);
@@ -134,7 +137,7 @@ public class CBManager {
     public void purgeDocument(String _id) throws CouchbaseLiteException {
         Database defaultDb = getDatabase();
         Document document = defaultDb.getDocument(_id);
-        if(document!=null){
+        if (document != null) {
             defaultDb.purge(document);
         }
     }
