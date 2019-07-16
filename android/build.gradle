@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
@@ -16,8 +16,8 @@ rootProject.allprojects {
     repositories {
         google()
         jcenter()
-        maven {
-            url "http://mobile.maven.couchbase.com/maven2/dev/"
+        flatDir {
+            dirs 'libs'
         }
     }
 }
@@ -36,7 +36,8 @@ android {
     }
 
     dependencies {
-        implementation 'com.couchbase.lite:couchbase-lite-android:2.1.0'
+        implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+        implementation (name:'couchbase-lite-android-2.1.5-SNAPSHOT-release1', ext:'aar')
         testImplementation 'junit:junit:4.12'
         androidTestImplementation 'com.android.support.test:runner:1.0.2'
         androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

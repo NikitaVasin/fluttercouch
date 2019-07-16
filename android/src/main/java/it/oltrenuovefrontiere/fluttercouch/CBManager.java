@@ -1,9 +1,7 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
-import android.content.Context;
-import android.util.Log;
-
 import com.couchbase.lite.BasicAuthenticator;
+import com.couchbase.lite.Blob;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DataSource;
 import com.couchbase.lite.Database;
@@ -23,13 +21,11 @@ import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CBManager {
@@ -67,13 +63,12 @@ public class CBManager {
 
     public Map<String, Object> getDocumentWithId(String _id) throws CouchbaseLiteException {
         Database defaultDb = getDatabase();
-        HashMap<String, Object> resultMap = new HashMap<String, Object>();
+        Map<String, Object> resultMap = new HashMap<>();
         if (defaultDatabase != null) {
             try {
                 Document document = defaultDb.getDocument(_id);
                 if (document != null) {
-                    resultMap.put("doc", document.toMap());
-                    resultMap.put("id", _id);
+                    resultMap = processDoc(document.toMap());
                 } else {
                     resultMap.put("doc", null);
                     resultMap.put("id", _id);
@@ -98,7 +93,7 @@ public class CBManager {
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
-                ret.put("doc", doc);
+                ret.put("doc", processDoc(((Document)doc).toMap()));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -122,7 +117,7 @@ public class CBManager {
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
-                ret.put("doc", doc);
+                ret.put("doc", processDoc(((Document)doc).toMap()));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -208,5 +203,50 @@ public class CBManager {
 
     public Replicator getReplicator() {
         return mReplicator;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> processDoc(Map<String, Object> document) {
+        Map<String, Object> resultMap = new HashMap<>();
+        Map<String, Object> retrievedDocument = new HashMap<>(document);
+
+        Map<String, Object> attachments = (Map<String, Object>) retrievedDocument.get("_attachments");
+        if (attachments != null) {
+            Map<String, Object> attachmentsPath = new HashMap<>();
+            for (String key : attachments.keySet()) {
+                Object b = attachments.get(key);
+                if (b instanceof Blob) {
+                    attachmentsPath.put(key, ((Blob) b).getFilePath());
+                }
+            }
+            retrievedDocument.remove("_attachments");
+
+            retrievedDocument = (Map<String, Object>) replaceFilesFromAttachments(attachmentsPath, retrievedDocument, null);
+        }
+        resultMap.put("id", document.get("id"));
+        resultMap.put("doc", retrievedDocument);
+        return resultMap;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object replaceFilesFromAttachments(final Map<String, Object> attachments, final Object object, String key) {
+        if (object instanceof Map) {
+            Map<String, Object> dict = ((Map<String, Object>) object);
+            Map<String, Object> d = new HashMap<>(dict);
+            for (Map.Entry<String, Object> entry : dict.entrySet()) {
+                d.put(entry.getKey(), replaceFilesFromAttachments(attachments, entry.getValue(), entry.getKey()));
+            }
+            return d;
+        } else if (object instanceof List) {
+            List<Object> list = (List<Object>) object;
+            List<Object> l = new ArrayList<>(list.size());
+            for (Object it : list) {
+                l.add(replaceFilesFromAttachments(attachments, it, null));
+            }
+            return l;
+        } else if (object instanceof String) {
+            if ("file".equals(key)) return attachments.get(object);
+        }
+        return object;
     }
 }
