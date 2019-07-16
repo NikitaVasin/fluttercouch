@@ -1,5 +1,7 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
+import android.util.Log;
+
 import com.couchbase.lite.BasicAuthenticator;
 import com.couchbase.lite.Blob;
 import com.couchbase.lite.CouchbaseLiteException;
@@ -68,7 +70,8 @@ public class CBManager {
             try {
                 Document document = defaultDb.getDocument(_id);
                 if (document != null) {
-                    resultMap = processDoc(document.toMap());
+                    resultMap.put("doc", processDoc(document.toMap()));
+                    resultMap.put("id", document.getId());
                 } else {
                     resultMap.put("doc", null);
                     resultMap.put("id", _id);
@@ -93,7 +96,7 @@ public class CBManager {
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
-                ret.put("doc", processDoc(((Document)doc).toMap()));
+                ret.put("doc", processDoc(( Map<String, Object>)doc));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -117,7 +120,7 @@ public class CBManager {
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
                 Object doc = res.toMap().get(dbName);
-                ret.put("doc", processDoc(((Document)doc).toMap()));
+                ret.put("doc", processDoc(( Map<String, Object>)doc));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -207,7 +210,6 @@ public class CBManager {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> processDoc(Map<String, Object> document) {
-        Map<String, Object> resultMap = new HashMap<>();
         Map<String, Object> retrievedDocument = new HashMap<>(document);
 
         Map<String, Object> attachments = (Map<String, Object>) retrievedDocument.get("_attachments");
@@ -223,9 +225,7 @@ public class CBManager {
 
             retrievedDocument = (Map<String, Object>) replaceFilesFromAttachments(attachmentsPath, retrievedDocument, null);
         }
-        resultMap.put("id", document.get("id"));
-        resultMap.put("doc", retrievedDocument);
-        return resultMap;
+        return retrievedDocument;
     }
 
     @SuppressWarnings("unchecked")
