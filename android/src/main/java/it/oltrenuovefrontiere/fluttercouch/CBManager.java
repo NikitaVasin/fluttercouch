@@ -23,12 +23,15 @@ import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class CBManager {
 
@@ -58,8 +61,18 @@ public class CBManager {
     }
 
     public String saveDocumentWithId(String _id, Map<String, Object> _map) throws CouchbaseLiteException {
+        Database defaultDb = mDatabase.get(defaultDatabase);
+        Document document = defaultDb.getDocument(_id);
+        for (String key : document.getKeys()) {
+            if (key.equals("_attachments")) {
+                _map.put(key, document.getValue(key));
+            }
+            Blob b = document.getBlob(key);
+            if (b != null) _map.put(key, b);
+        }
+        removeAttachmentsPath(_map);
         MutableDocument mutableDoc = new MutableDocument(_id, _map);
-        mDatabase.get(defaultDatabase).save(mutableDoc);
+        defaultDb.save(mutableDoc);
         return mutableDoc.getId();
     }
 
@@ -70,7 +83,7 @@ public class CBManager {
             try {
                 Document document = defaultDb.getDocument(_id);
                 if (document != null) {
-                    resultMap.put("doc", processDoc(document.toMap()));
+                    resultMap.put("doc", processDoc(document));
                     resultMap.put("id", document.getId());
                 } else {
                     resultMap.put("doc", null);
@@ -86,7 +99,7 @@ public class CBManager {
     public Map<String, Object> getDocumentsWith(String key, String value) throws CouchbaseLiteException {
         Database defaultDb = getDatabase();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
-        Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
+        Query query = QueryBuilder.select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(defaultDb))
                 .where(Expression.property(key).equalTo(Expression.string(value)));
         try {
@@ -95,8 +108,7 @@ public class CBManager {
             String dbName = defaultDb.getName();
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
-                Object doc = res.toMap().get(dbName);
-                ret.put("doc", processDoc(( Map<String, Object>)doc));
+                ret.put("doc", processDoc(defaultDb.getDocument(res.getString("id"))));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -111,7 +123,7 @@ public class CBManager {
     public Map<String, Object> getAllDocuments() throws CouchbaseLiteException {
         Database defaultDb = getDatabase();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
-        Query query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
+        Query query = QueryBuilder.select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(defaultDb));
         try {
             ResultSet result = query.execute();
@@ -119,8 +131,7 @@ public class CBManager {
             String dbName = defaultDb.getName();
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
-                Object doc = res.toMap().get(dbName);
-                ret.put("doc", processDoc(( Map<String, Object>)doc));
+                ret.put("doc", processDoc(defaultDb.getDocument(res.getString("id"))));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -130,6 +141,28 @@ public class CBManager {
             resultMap.put("docs", null);
         }
         return resultMap;
+    }
+
+    public String addAttachment(String _id, String contentType, String filePath) throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        MutableDocument document = defaultDb.getDocument(_id).toMutable();
+        try {
+            String key = new RandomString(5, new Random()).nextString();
+            Blob b = new Blob(contentType, new File(filePath).toURI().toURL());
+            document.setBlob(key, b);
+            defaultDb.save(document);
+            return key;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void removeAttachment(String _id, String key) throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        MutableDocument document = defaultDb.getDocument(_id).toMutable();
+        document.setBlob(key, null);
+        defaultDb.save(document);
     }
 
     public void purgeDocument(String _id) throws CouchbaseLiteException {
@@ -209,43 +242,73 @@ public class CBManager {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> processDoc(Map<String, Object> document) {
-        Map<String, Object> retrievedDocument = new HashMap<>(document);
-
+    private Map<String, Object> processDoc(Document document) {
+        Map<String, Object> retrievedDocument = new HashMap<>(document.toMap());
+        Map<String, Object> attachmentsPath = new HashMap<>();
+        for (String key : retrievedDocument.keySet()) {
+            Blob b = document.getBlob(key);
+            if (b != null) {
+                attachmentsPath.put(key, b.getFilePath());
+            }
+        }
+        for (String key : attachmentsPath.keySet()) {
+            retrievedDocument.remove(key);
+        }
         Map<String, Object> attachments = (Map<String, Object>) retrievedDocument.get("_attachments");
         if (attachments != null) {
-            Map<String, Object> attachmentsPath = new HashMap<>();
             for (String key : attachments.keySet()) {
                 Object b = attachments.get(key);
+
                 if (b instanceof Blob) {
                     attachmentsPath.put(key, ((Blob) b).getFilePath());
                 }
             }
             retrievedDocument.remove("_attachments");
+        }
 
-            retrievedDocument = (Map<String, Object>) replaceFilesFromAttachments(attachmentsPath, retrievedDocument, null);
+        if (attachmentsPath.size() > 0) {
+            retrievedDocument = (Map<String, Object>) addAttachmentsPath(attachmentsPath, retrievedDocument, null);
         }
         return retrievedDocument;
     }
 
+
+    private void removeAttachmentsPath(final Object object){
+        if(object instanceof  Map){
+            Map<String, Object> map = ((Map<String, Object>) object);
+            if(map.containsKey("contentType")){
+                map.remove("path");
+            }
+            for(String key:map.keySet()){
+                removeAttachmentsPath(map.get(key));
+            }
+        }else if(object instanceof List){
+            List<Object> list = (List<Object>) object;
+            for(Object o:list){
+                removeAttachmentsPath(o);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
-    private Object replaceFilesFromAttachments(final Map<String, Object> attachments, final Object object, String key) {
+    private Object addAttachmentsPath(final Map<String, Object> attachments, final Object object, String key) {
         if (object instanceof Map) {
             Map<String, Object> dict = ((Map<String, Object>) object);
             Map<String, Object> d = new HashMap<>(dict);
+            Object attachPath = attachments.get((String) d.get("file"));
+            if (attachPath != null) d.put("path", attachPath);
             for (Map.Entry<String, Object> entry : dict.entrySet()) {
-                d.put(entry.getKey(), replaceFilesFromAttachments(attachments, entry.getValue(), entry.getKey()));
+                d.put(entry.getKey(), addAttachmentsPath(attachments, entry.getValue(), entry.getKey()));
             }
+
             return d;
         } else if (object instanceof List) {
             List<Object> list = (List<Object>) object;
             List<Object> l = new ArrayList<>(list.size());
             for (Object it : list) {
-                l.add(replaceFilesFromAttachments(attachments, it, null));
+                l.add(addAttachmentsPath(attachments, it, null));
             }
             return l;
-        } else if (object instanceof String) {
-            if ("file".equals(key)) return attachments.get(object);
         }
         return object;
     }

@@ -1,23 +1,15 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.util.Log;
 
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Database;
-import com.couchbase.lite.DatabaseConfiguration;
 import com.couchbase.lite.Query;
 
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -140,6 +132,28 @@ public class FluttercouchPlugin implements MethodCallHandler {
                     result.success(cbManager.getAllDocuments());
                 } catch (CouchbaseLiteException e) {
                     e.printStackTrace();
+                }
+                break;
+            case ("addAttachment"):
+                String documentId = call.argument("id");
+                String contentType = call.argument("contentType");
+                String filePath = call.argument("filePath");
+                try{
+                    result.success(cbManager.addAttachment(documentId, contentType, filePath));
+                } catch (CouchbaseLiteException e){
+                    e.printStackTrace();
+                    result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                }
+                break;
+            case ("removeAttachment"):
+                documentId = call.argument("id");
+                key = call.argument("key");
+                try {
+                    cbManager.removeAttachment(documentId, key);
+                    result.success(true);
+                } catch (CouchbaseLiteException e) {
+                    e.printStackTrace();
+                    result.error("errRemove", "error remove attachment " + key + " from document " + documentId, e.toString());
                 }
                 break;
             case ("purgeDocument"):
