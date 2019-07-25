@@ -41,41 +41,86 @@ class CBManager {
     }
     
     func saveDocumentWithId(id : String, map: Dictionary<String, Any>) throws -> String? {
-        let mutableDocument: MutableDocument = MutableDocument(id: id, data: map)
-        try mDatabase[defaultDatabase]?.saveDocument(mutableDocument)
-        return mutableDocument.id
+        if let defaultDb: Database = getDatabase() {
+            if let doc: Document = defaultDb.document(withID: id) {
+                let mutableMap = (map as NSDictionary).mutableCopy() as! NSMutableDictionary;
+                for key in doc.keys{
+                    if(key == "_attachments"){
+                        mutableMap[key] = doc.value(forKey: key)
+                    }
+                    if let blob = doc.blob(forKey: key){
+                        mutableMap[key] = blob
+                    }
+                }
+                let resultMap = removeAttachmentsPath(object: mutableMap as NSDictionary)
+                let mutableDocument: MutableDocument = MutableDocument(id: id, data: mutableMap as? Dictionary<String, Any>)
+                try defaultDb.saveDocument(mutableDocument)
+                return mutableDocument.id
+            }
+        }
+        return id
     }
     
-    func replaceFilesFromAttachments(attarchments:NSDictionary, object:AnyObject,  key:String?) -> AnyObject {
+    func removeAttachmentsPath(object: AnyObject) -> AnyObject {
+        if let dict = object as? NSDictionary{
+            let d:NSMutableDictionary = dict.mutableCopy() as! NSMutableDictionary
+            if(d.value(forKey: "contentType") != nil){
+                d["path"] = nil
+            }
+            for (key, value) in d {
+                let val =  removeAttachmentsPath(object:value as AnyObject)
+                d[key] = val;
+            }
+        }else if let array = object as? NSArray{
+            let a =  array.map{(value)->AnyObject in
+                return removeAttachmentsPath(object:value as AnyObject)
+                } as AnyObject
+            return a
+        }
+        return object;
+        
+    }
+    
+    func addAttachmentsPath(attarchments:NSDictionary, object:AnyObject,  key:String?) -> AnyObject {
         if let dict = object as? NSDictionary {
             let d:NSMutableDictionary = dict.mutableCopy() as! NSMutableDictionary
+            if let attachKey = d["file"] as! String?{
+                if let attachPath = attarchments[attachKey] {
+                    d["path"] = attachPath
+                }
+            }
+           
             for (key, value) in dict {
-                let val = replaceFilesFromAttachments(attarchments: attarchments, object: value as AnyObject, key: key as? String)
+                let val = addAttachmentsPath(attarchments: attarchments, object: value as AnyObject, key: key as? String)
                 d[key] = val
             }
-            
             return d as AnyObject
         }
         else if let array = object as? NSArray {
             let a =  array.map{(value)->AnyObject in
-                return replaceFilesFromAttachments(attarchments: attarchments, object: value as AnyObject, key: nil)
+                return addAttachmentsPath(attarchments: attarchments, object: value as AnyObject, key: nil)
                 } as AnyObject
             return a
-        }
-        else {
-            if key == "file", let filePath = attarchments[object] {
-                return filePath as AnyObject
-            }
         }
         return object;
     }
     
     
-    func processDoc (document: NSDictionary) -> NSDictionary? {
-        let resultMap: NSMutableDictionary = NSMutableDictionary.init()
-        var retrievedDocument: NSMutableDictionary = document.mutableCopy() as! NSMutableDictionary
+    
+    func processDoc (document: Document) -> NSDictionary? {
+        let dictionary: NSDictionary = document.toDictionary() as NSDictionary
+        var retrievedDocument: NSMutableDictionary = dictionary.mutableCopy() as! NSMutableDictionary
+        let attachmentsPath = NSMutableDictionary()
+        for (key, _) in retrievedDocument {
+            if let blob = document.blob(forKey: (key as! String)){
+                 attachmentsPath[key] = blob.filePath
+            }
+        }
+        for (key, _) in attachmentsPath {
+            retrievedDocument.removeObject(forKey: key as! String)
+        }
         if let attcahments = retrievedDocument.value(forKey: "_attachments") as? NSDictionary {
-            let attachmentsPath = NSMutableDictionary()
+            
             for (key, value) in attcahments {
                 if let blob = value as? Blob {
                     attachmentsPath[key] = blob.filePath
@@ -83,27 +128,25 @@ class CBManager {
             }
 
             retrievedDocument.removeObject(forKey: "_attachments")
-            if let d = replaceFilesFromAttachments(attarchments: attachmentsPath, object: retrievedDocument, key: nil) as? NSDictionary {
-                retrievedDocument = d.mutableCopy() as! NSMutableDictionary
-            }
-            
 
         }
+
+        if let d = addAttachmentsPath(attarchments: attachmentsPath, object: retrievedDocument, key: nil) as? NSDictionary {
+            retrievedDocument = d.mutableCopy() as! NSMutableDictionary
+        }
         
-        
-        resultMap["id"] = document["id"]
-        resultMap["doc"] = retrievedDocument
-        return resultMap
+        return retrievedDocument
     }
     
     func getDocumentWithId(id : String) -> NSDictionary? {
-        var resultMap: NSMutableDictionary = NSMutableDictionary()
+        let resultMap: NSMutableDictionary = NSMutableDictionary()
         resultMap["id"] = id
         resultMap["doc"] = NSDictionary()
         if let defaultDb: Database = getDatabase() {
             if let document: Document = defaultDb.document(withID: id) {
-                if let d = processDoc(document: document.toDictionary() as NSDictionary) {
-                    resultMap = d.mutableCopy() as! NSMutableDictionary
+                if let d = processDoc(document: document) {
+                    resultMap["id"] = document.id
+                    resultMap["doc"] = d
                 }
             } else {
                 resultMap["id"] = id
@@ -117,18 +160,19 @@ class CBManager {
         let resultMap: NSMutableDictionary = NSMutableDictionary();
         if let defaultDb: Database = getDatabase() {
             let query = QueryBuilder
-                .select(SelectResult.all(), SelectResult.expression(Meta.id))
+                .select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(defaultDb))
                 .where(Expression.property(key).equalTo(Expression.string(value)))
             do {
                 let result = try query.execute()
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
-                    if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = processDoc(document: doc.toDictionary() as NSDictionary)
-                        let id = result.string(forKey: "id")
+                    if let id = result.string(forKey: "id") {
+                        if let doc:Document = defaultDb.document(withID: id) {
+                        ret["doc"] = processDoc(document: doc)
                         ret["id"] = id
-                    }
+                        }
+                    } 
                     return ret;
                     };
                 resultMap["docs"] = docs;
@@ -144,17 +188,19 @@ class CBManager {
         let resultMap: NSMutableDictionary = NSMutableDictionary();
         if let defaultDb: Database = getDatabase() {
             let query = QueryBuilder
-                .select(SelectResult.all(), SelectResult.expression(Meta.id))
+                .select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(defaultDb))
             do {
                 let result = try query.execute()
                 let docs = result.allResults().map{(result)->NSDictionary in
                     let ret = NSMutableDictionary();
-                    if let doc = result.dictionary(forKey: defaultDb.name ?? defaultDatabase) {
-                        ret["doc"] = processDoc(document: doc.toDictionary() as NSDictionary)
-                        let id = result.string(forKey: "id")
-                        ret["id"] = id
+                    if let id = result.string(forKey: "id") {
+                        if let doc:Document = defaultDb.document(withID: id) {
+                            ret["doc"] = processDoc(document: doc)
+                            ret["id"] = id
+                        }
                     }
+                   
                     return ret;
                     };
                 resultMap["docs"] = docs;
@@ -163,6 +209,28 @@ class CBManager {
             }
         }
         return resultMap;
+    }
+    
+    func addAttachment(docId:String, contentType:String, filePath:String) throws -> String? {
+        if let defaultDb: Database = getDatabase() {
+            if let doc: MutableDocument = defaultDb.document(withID: docId)?.toMutable() {
+                let key = String(Int.random(in: 0 ..< 99999)) //TODO random String
+                let blob = try Blob(contentType: contentType, fileURL: URL.init(fileURLWithPath: filePath))
+                doc.setBlob(blob, forKey: key)
+                try defaultDb.saveDocument(doc)
+                return key;
+            }
+        }
+        return nil;
+    }
+    
+    func removeAttachment(docId:String, key:String) throws {
+        if let defaultDb: Database = getDatabase() {
+            if let doc: MutableDocument = defaultDb.document(withID: docId)?.toMutable() {
+                doc.setBlob(nil, forKey: key)
+                try defaultDb.saveDocument(doc)
+            }
+        }
     }
     
     func purgeDocument(docId: String) -> Bool {

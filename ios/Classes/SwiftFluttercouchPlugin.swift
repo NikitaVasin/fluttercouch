@@ -105,7 +105,34 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
             let returnMap = mCbManager.getAllDocuments() 
             result(returnMap)
         }
+    case "addAttachment":
+        let arguments = call.arguments! as! [String:Any]
+        let dbName = arguments["db"] as! String
+        let id = arguments["id"] as! String
+        let contentType = arguments["contentType"] as! String
+        let filePath = arguments["filePath"] as! String
         
+        if let mCbManager = self.mCbManagers[dbName] {
+            do{
+                let key = try mCbManager.addAttachment(docId: id, contentType: contentType, filePath: filePath)
+                result(key)
+            }catch{
+                result(FlutterError.init(code: "errAdd", message: "error add attachment", details: ""))
+            }
+        }
+    case "removeAttachment":
+        let arguments = call.arguments! as! [String:Any]
+        let dbName = arguments["db"] as! String
+        let id = arguments["id"] as! String
+        let key = arguments["key"] as! String
+        if let mCbManager = self.mCbManagers[dbName] {
+            do{
+                try mCbManager.removeAttachment(docId: id, key: key);
+                result(true)
+            }catch{
+                result(FlutterError.init(code: "errRemove", message: "error remove attachment", details: ""))
+            }
+        }
     case "purgeDocument": 
         let arguments = call.arguments! as! [String:Any]
         let dbName = arguments["db"] as! String
