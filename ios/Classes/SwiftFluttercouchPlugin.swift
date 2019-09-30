@@ -42,12 +42,15 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
         let dbName = arguments["db"] as! String
         let assetPath = arguments["assetPath"] as! String
         if let resourceName = assetPath.components(separatedBy: "/").last?.replacingOccurrences(of: ".zip", with: ""){
-            let zipPath = Bundle.main.path(forResource: resourceName, ofType: "zip")!
-            let unzipPath = DatabaseConfiguration().directory
-            if !Database.exists(withName: dbName) {
-                SSZipArchive.unzipFile(atPath:zipPath,toDestination:unzipPath)
-                result(true)
-            }else{
+            if let zipPath = Bundle.main.path(forResource: resourceName, ofType: "zip") {
+                let unzipPath = DatabaseConfiguration().directory
+                if !Database.exists(withName: dbName) {
+                    SSZipArchive.unzipFile(atPath:zipPath,toDestination:unzipPath)
+                    result(true)
+                }else{
+                    result(false)
+                }
+            } else {
                 result(false)
             }
         }
