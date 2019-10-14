@@ -214,7 +214,7 @@ class CBManager {
     func addAttachment(docId:String, contentType:String, filePath:String) throws -> String? {
         if let defaultDb: Database = getDatabase() {
             if let doc: MutableDocument = defaultDb.document(withID: docId)?.toMutable() {
-                let key = String(Int.random(in: 0 ..< 99999)) //TODO random String
+                let key = String((0..<5).map{ _ in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()! })//String(Int.random(in: 0 ..< 99999)) //TODO random String
                 let blob = try Blob(contentType: contentType, fileURL: URL.init(fileURLWithPath: filePath))
                 doc.setBlob(blob, forKey: key)
                 try defaultDb.saveDocument(doc)
