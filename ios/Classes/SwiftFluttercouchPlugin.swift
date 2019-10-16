@@ -113,7 +113,11 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
         let dbName = arguments["db"] as! String
         let id = arguments["id"] as! String
         let contentType = arguments["contentType"] as! String
-        let filePath = arguments["filePath"] as! String
+        var filePath = arguments["filePath"] as! String
+        if filePath.contains("asset://") {
+            let key = registar?.lookupKey(forAsset: filePath.replacingOccurrences(of: "asset://", with: ""))
+            filePath = Bundle.main.path(forResource: key, ofType: nil) ?? "";
+        }
         
         if let mCbManager = self.mCbManagers[dbName] {
             do{

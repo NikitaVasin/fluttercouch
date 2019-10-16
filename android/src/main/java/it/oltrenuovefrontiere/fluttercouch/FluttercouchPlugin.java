@@ -8,6 +8,10 @@ import com.couchbase.lite.Query;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -19,6 +23,9 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import android.content.res.AssetManager;
+import android.content.res.AssetFileDescriptor;
+import java.io.File;
 
 /**
  * FluttercouchPlugin
@@ -138,8 +145,30 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 String documentId = call.argument("id");
                 String contentType = call.argument("contentType");
                 String filePath = call.argument("filePath");
+                FileDescriptor fileDescriptor;
+                InputStream inputStream;
+                if (filePath.contains("asset://"))  {
+                    filePath = filePath.replace("asset://", "");
+                    AssetManager assetManager = registrar.context().getAssets();
+                    String assetKey = registrar.lookupKeyForAsset(filePath);
+                    try {
+                        AssetFileDescriptor fd = assetManager.openFd(assetKey);
+                        inputStream = fd.createInputStream();
+                    } catch (Throwable e) {
+                        result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                        return;
+                    }
+                } else {
+                    File file = new File(filePath);
+                    try {
+                        inputStream = new FileInputStream(file);
+                    } catch (FileNotFoundException e) {
+                        result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                        return;
+                    }
+                }
                 try{
-                    result.success(cbManager.addAttachment(documentId, contentType, filePath));
+                    result.success(cbManager.addAttachment(documentId, contentType, inputStream));
                 } catch (CouchbaseLiteException e){
                     e.printStackTrace();
                     result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());

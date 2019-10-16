@@ -22,6 +22,7 @@ import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
+import java.io.InputStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -143,19 +144,14 @@ public class CBManager {
         return resultMap;
     }
 
-    public String addAttachment(String _id, String contentType, String filePath) throws CouchbaseLiteException {
+    public String addAttachment(String _id, String contentType, InputStream inputStream) throws CouchbaseLiteException {
         Database defaultDb = getDatabase();
         MutableDocument document = defaultDb.getDocument(_id).toMutable();
-        try {
-            String key = new RandomString(5, new Random()).nextString();
-            Blob b = new Blob(contentType, new File(filePath).toURI().toURL());
-            document.setBlob(key, b);
-            defaultDb.save(document);
-            return key;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        String key = new RandomString(5, new Random()).nextString();
+        Blob b = new Blob(contentType, inputStream/*new File(filePath).toURI().toURL()*/);
+        document.setBlob(key, b);
+        defaultDb.save(document);
+        return key;
     }
 
     public void removeAttachment(String _id, String key) throws CouchbaseLiteException {
