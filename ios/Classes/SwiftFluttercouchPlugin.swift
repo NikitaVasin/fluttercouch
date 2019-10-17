@@ -151,6 +151,17 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
                 result(false);
             }
         }
+    case "deleteDocument":
+        let arguments = call.arguments! as! [String:Any]
+        let dbName = arguments["db"] as! String
+        let id = arguments["id"] as! String
+        if let mCbManager = self.mCbManagers[dbName] {
+            if mCbManager.deleteDocument(docId: id) {
+                result(true);
+            } else {
+                result(false);
+            }
+        }
     case "setReplicatorEndpoint":
         let arguments = call.arguments! as! [String:Any]
         let dbName = arguments["db"] as! String

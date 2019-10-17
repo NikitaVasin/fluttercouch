@@ -128,7 +128,7 @@ abstract class Fluttercouch {
     }
   }
 
-  Future purgeDocumentId(String docId) async {
+  Future purgeDocumentById(String docId) async {
     _assertInitialized();
     try {
       final bool result = await _methodChannel.invokeMethod(
@@ -136,6 +136,17 @@ abstract class Fluttercouch {
       return result;
     } on PlatformException {
       throw 'unable purge document';
+    }
+  }
+
+  Future deleteDocumentById(String docId) async {
+    _assertInitialized();
+    try {
+      final bool result = await _methodChannel.invokeMethod(
+          'deleteDocument', {"db": this.dbName, "id": docId});
+      return result;
+    } on PlatformException {
+      throw 'unable delete document';
     }
   }
 

@@ -243,6 +243,16 @@ class CBManager {
         return false;
     }
 
+    func deleteDocument(docId: String) -> Bool {
+        if let defaultDb: Database = getDatabase() {
+            if let doc: Document = defaultDb.document(withID: docId) {
+                try! defaultDb.deleteDocument(doc);
+                return true;
+            }
+        }
+        return false;
+    }
+
     func initDatabaseWithName(name: String){
         if mDatabase.keys.contains(name) {
             defaultDatabase = name

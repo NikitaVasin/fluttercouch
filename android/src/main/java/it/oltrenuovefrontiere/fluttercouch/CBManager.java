@@ -169,6 +169,14 @@ public class CBManager {
         }
     }
 
+    public void deleteDocument(String _id) throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        Document document = defaultDb.getDocument(_id);
+        if (document != null) {
+            defaultDb.delete(document);
+        }
+    }
+
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
         DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
         if (!mDatabase.containsKey(_name)) {

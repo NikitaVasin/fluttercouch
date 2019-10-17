@@ -195,6 +195,16 @@ public class FluttercouchPlugin implements MethodCallHandler {
                     result.error("errGet", "error purgeDocument with id: " + _id, e.toString());
                 }
                 break;
+            case ("deleteDocument"):
+                _id = call.argument("id");
+                try {
+                    cbManager.deleteDocument(_id);
+                    result.success(true);
+                } catch (CouchbaseLiteException e) {
+                    e.printStackTrace();
+                    result.error("errGet", "error deleteDocument with id: " + _id, e.toString());
+                }
+                break;
             case ("setReplicatorEndpoint"):
                 String _endpoint = call.argument("endpoint");
                 try {
