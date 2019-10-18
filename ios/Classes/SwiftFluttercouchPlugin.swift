@@ -37,6 +37,14 @@ public class SwiftFluttercouchPlugin: NSObject, FlutterPlugin {
         }
         mCbManager!.initDatabaseWithName(name: name)
         result(String(name))
+    case "deleteDatabase":
+        let arguments = call.arguments! as! [String:Any]
+        let dbName = arguments["db"] as! String
+
+        if let mCbManager = self.mCbManagers[dbName] {
+            mCbManager.delete()
+            result(true);
+        }
     case "prebuildDatabase":
         let arguments = call.arguments! as! [String:Any]
         let dbName = arguments["db"] as! String

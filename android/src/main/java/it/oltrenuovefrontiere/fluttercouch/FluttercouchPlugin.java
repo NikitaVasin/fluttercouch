@@ -73,6 +73,15 @@ public class FluttercouchPlugin implements MethodCallHandler {
                     result.error("errInit", "error initializing database", e.toString());
                 }
                 break;
+            case ("deleteDatabase"):
+                try {
+                   cbManager.delete();
+                    result.success(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    result.error("errSave", "error saving the document", e.toString());
+                }
+                break;
             case ("prebuildDatabase"):
                 String assetPath = call.argument("assetPath");
                 try {

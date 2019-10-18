@@ -128,6 +128,16 @@ abstract class Fluttercouch {
     }
   }
 
+  Future delete() async {
+    try {
+      return await _methodChannel.invokeMethod(
+          'deleteDatabase', {"db": dbName,});
+    } on PlatformException catch (e) {
+      throw 'unable to delete Database $dbName: ${e.message}';
+    }
+  }
+
+
   Future purgeDocumentById(String docId) async {
     _assertInitialized();
     try {
@@ -139,7 +149,7 @@ abstract class Fluttercouch {
     }
   }
 
-  Future deleteDocumentById(String docId) async {
+  Future<bool> deleteDocumentById(String docId) async {
     _assertInitialized();
     try {
       final bool result = await _methodChannel.invokeMethod(

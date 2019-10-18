@@ -186,6 +186,12 @@ public class CBManager {
         }
     }
 
+    public void delete() throws CouchbaseLiteException {
+        Database defaultDb = getDatabase();
+        defaultDb.delete();
+        mDatabase.clear();
+    }
+
     public String setReplicatorEndpoint(String _endpoint) throws URISyntaxException {
         Endpoint targetEndpoint = new URLEndpoint(new URI(_endpoint));
         mReplConfig = new ReplicatorConfiguration(mDatabase.get(defaultDatabase), targetEndpoint);
