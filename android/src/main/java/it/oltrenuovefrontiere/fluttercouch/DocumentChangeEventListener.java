@@ -19,12 +19,12 @@ public class DocumentChangeEventListener implements EventChannel.StreamHandler, 
     @Override
     public void onListen(Object o, final EventChannel.EventSink eventSink) {
         mEventSink = eventSink;
-        mListenerToken = mCBmanager.getDatabase().addChangeListener(this);
+        mListenerToken = mCBmanager.addDatabaseChangeListener(this);
     }
 
     @Override
     public void onCancel(Object o) {
-        mCBmanager.getDatabase().removeChangeListener(mListenerToken);
+        mCBmanager.removeDatabaseChangeListener(mListenerToken);
         mEventSink = null;
     }
 

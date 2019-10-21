@@ -274,6 +274,13 @@ class CBManager {
              mDatabase.removeAll();
         }
      }
+
+     func close(){
+         if let defaultDb: Database = getDatabase() {
+              try! defaultDb.close();
+              mDatabase.removeAll();
+         }
+      }
     
     func setReplicatorEndpoint(endpoint: String) {
         let targetEndpoint = URLEndpoint(url: URL(string: endpoint)!)

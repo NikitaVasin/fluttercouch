@@ -24,12 +24,12 @@ public class ReplicationEventListener implements EventChannel.StreamHandler, Rep
     @Override
     public void onListen(Object o, final EventChannel.EventSink eventSink) {
         mEventSink = eventSink;
-        mListenerToken = mCBmanager.getReplicator().addChangeListener(this);
+        mListenerToken = mCBmanager.addReplicationChangeListener(this);
     }
 
     @Override
     public void onCancel(Object o) {
-        mCBmanager.getReplicator().removeChangeListener(mListenerToken);
+        mCBmanager.removeReplicationChangeListener(mListenerToken);
         mEventSink = null;
     }
 

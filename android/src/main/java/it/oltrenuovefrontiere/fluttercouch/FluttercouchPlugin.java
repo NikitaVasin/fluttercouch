@@ -73,13 +73,22 @@ public class FluttercouchPlugin implements MethodCallHandler {
                     result.error("errInit", "error initializing database", e.toString());
                 }
                 break;
+            case ("closeDatabase"):
+                try {
+                    cbManager.close();
+                    result.success(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    result.error("errSave", "error saving the document", e.toString());
+                }
+                break;
             case ("deleteDatabase"):
                 try {
                    cbManager.delete();
                     result.success(null);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    result.error("errSave", "error saving the document", e.toString());
+                    result.error("errSave", "error delete the document", e.toString());
                 }
                 break;
             case ("prebuildDatabase"):
@@ -272,20 +281,6 @@ public class FluttercouchPlugin implements MethodCallHandler {
             case ("stopReplicator"):
                 cbManager.stopReplicator();
                 result.success("");
-                break;
-            case ("executeQuery"):
-                HashMap<String, String> _queryMap = call.arguments();
-                Query query = QueryManager.buildFromMap(_queryMap, cbManager);
-                try {
-                    result.success(query.explain());
-                } catch (CouchbaseLiteException e) {
-                    e.printStackTrace();
-                    result.error("errExecutingQuery", "error executing query ", e.toString());
-                }
-                break;
-            case ("execute"):
-                JSONObject queryJson = call.arguments();
-                Query queryFromJson = new QueryJson(cbManager, queryJson).toCouchbaseQuery();
                 break;
             default:
                 result.notImplemented();

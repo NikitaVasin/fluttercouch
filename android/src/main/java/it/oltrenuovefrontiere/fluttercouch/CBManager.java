@@ -1,31 +1,30 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
-import android.util.Log;
-
 import com.couchbase.lite.BasicAuthenticator;
 import com.couchbase.lite.Blob;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DataSource;
 import com.couchbase.lite.Database;
+import com.couchbase.lite.DatabaseChangeListener;
 import com.couchbase.lite.DatabaseConfiguration;
 import com.couchbase.lite.Document;
 import com.couchbase.lite.Endpoint;
 import com.couchbase.lite.Expression;
+import com.couchbase.lite.ListenerToken;
 import com.couchbase.lite.Meta;
 import com.couchbase.lite.MutableDocument;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Replicator;
+import com.couchbase.lite.ReplicatorChangeListener;
 import com.couchbase.lite.ReplicatorConfiguration;
 import com.couchbase.lite.Result;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
-import java.io.InputStream;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -36,34 +35,60 @@ import java.util.Random;
 
 public class CBManager {
 
-    private HashMap<String, Database> mDatabase = new HashMap<>();
-    private ReplicatorConfiguration mReplConfig;
+    private Database mDatabase;
+    private ReplicatorConfiguration mReplicatorConfig;
     private Replicator mReplicator;
-    private String defaultDatabase = "defaultDatabase";
 
-    public CBManager() {
-    }
-
-    public Database getDatabase() {
-        return mDatabase.get(defaultDatabase);
-    }
-
-    public Database getDatabase(String name) {
-        if (mDatabase.containsKey(name)) {
-            return mDatabase.get(name);
+    public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
+        DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
+        if (mDatabase == null) {
+            mDatabase = new Database(_name, config);
         }
-        return null;
+    }
+
+    public void close() throws CouchbaseLiteException {
+        ensureInitialized();
+        mDatabase.close();
+        mDatabase = null;
+    }
+
+    public void delete() throws CouchbaseLiteException {
+        ensureInitialized();
+        mDatabase.delete();
+        mDatabase = null;
     }
 
     public String saveDocument(Map<String, Object> _map) throws CouchbaseLiteException {
+        ensureInitialized();
         MutableDocument mutableDoc = new MutableDocument(_map);
-        mDatabase.get(defaultDatabase).save(mutableDoc);
+        mDatabase.save(mutableDoc);
         return mutableDoc.getId();
     }
 
+    public ListenerToken addDatabaseChangeListener(DatabaseChangeListener listener) {
+        ensureInitialized();
+        return mDatabase.addChangeListener(listener);
+    }
+
+    public void removeDatabaseChangeListener(ListenerToken token) {
+        ensureInitialized();
+        mDatabase.removeChangeListener(token);
+    }
+
+
+    public ListenerToken addReplicationChangeListener(ReplicatorChangeListener listener) {
+        ensureInitialized();
+        return mReplicator.addChangeListener(listener);
+    }
+
+    public void removeReplicationChangeListener(ListenerToken token) {
+        ensureInitialized();
+        mReplicator.removeChangeListener(token);
+    }
+
     public String saveDocumentWithId(String _id, Map<String, Object> _map) throws CouchbaseLiteException {
-        Database defaultDb = mDatabase.get(defaultDatabase);
-        Document document = defaultDb.getDocument(_id);
+        ensureInitialized();
+        Document document = mDatabase.getDocument(_id);
         for (String key : document.getKeys()) {
             if (key.equals("_attachments")) {
                 _map.put(key, document.getValue(key));
@@ -73,43 +98,40 @@ public class CBManager {
         }
         removeAttachmentsPath(_map);
         MutableDocument mutableDoc = new MutableDocument(_id, _map);
-        defaultDb.save(mutableDoc);
+        mDatabase.save(mutableDoc);
         return mutableDoc.getId();
     }
 
     public Map<String, Object> getDocumentWithId(String _id) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
+        ensureInitialized();
         Map<String, Object> resultMap = new HashMap<>();
-        if (defaultDatabase != null) {
-            try {
-                Document document = defaultDb.getDocument(_id);
-                if (document != null) {
-                    resultMap.put("doc", processDoc(document));
-                    resultMap.put("id", document.getId());
-                } else {
-                    resultMap.put("doc", null);
-                    resultMap.put("id", _id);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            Document document = mDatabase.getDocument(_id);
+            if (document != null) {
+                resultMap.put("doc", processDoc(document));
+                resultMap.put("id", document.getId());
+            } else {
+                resultMap.put("doc", null);
+                resultMap.put("id", _id);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return resultMap;
     }
 
     public Map<String, Object> getDocumentsWith(String key, String value) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
+        ensureInitialized();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
         Query query = QueryBuilder.select(SelectResult.expression(Meta.id))
-                .from(DataSource.database(defaultDb))
+                .from(DataSource.database(mDatabase))
                 .where(Expression.property(key).equalTo(Expression.string(value)));
         try {
             ResultSet result = query.execute();
             ArrayList docs = new ArrayList();
-            String dbName = defaultDb.getName();
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
-                ret.put("doc", processDoc(defaultDb.getDocument(res.getString("id"))));
+                ret.put("doc", processDoc(mDatabase.getDocument(res.getString("id"))));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -122,17 +144,16 @@ public class CBManager {
     }
 
     public Map<String, Object> getAllDocuments() throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
+        ensureInitialized();
         HashMap<String, Object> resultMap = new HashMap<String, Object>();
         Query query = QueryBuilder.select(SelectResult.expression(Meta.id))
-                .from(DataSource.database(defaultDb));
+                .from(DataSource.database(mDatabase));
         try {
             ResultSet result = query.execute();
             ArrayList docs = new ArrayList();
-            String dbName = defaultDb.getName();
             for (Result res : result.allResults()) {
                 HashMap<String, Object> ret = new HashMap<String, Object>();
-                ret.put("doc", processDoc(defaultDb.getDocument(res.getString("id"))));
+                ret.put("doc", processDoc(mDatabase.getDocument(res.getString("id"))));
                 ret.put("id", res.getString("id"));
                 docs.add(ret);
             }
@@ -145,57 +166,44 @@ public class CBManager {
     }
 
     public String addAttachment(String _id, String contentType, InputStream inputStream) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
-        MutableDocument document = defaultDb.getDocument(_id).toMutable();
+        ensureInitialized();
+        MutableDocument document = mDatabase.getDocument(_id).toMutable();
         String key = new RandomString(5, new Random()).nextString();
         Blob b = new Blob(contentType, inputStream/*new File(filePath).toURI().toURL()*/);
         document.setBlob(key, b);
-        defaultDb.save(document);
+        mDatabase.save(document);
         return key;
     }
 
     public void removeAttachment(String _id, String key) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
-        MutableDocument document = defaultDb.getDocument(_id).toMutable();
+        ensureInitialized();
+        MutableDocument document = mDatabase.getDocument(_id).toMutable();
         document.setBlob(key, null);
-        defaultDb.save(document);
+        mDatabase.save(document);
     }
 
     public void purgeDocument(String _id) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
-        Document document = defaultDb.getDocument(_id);
+        ensureInitialized();
+        Document document = mDatabase.getDocument(_id);
         if (document != null) {
-            defaultDb.purge(document);
+            mDatabase.purge(document);
         }
     }
 
     public void deleteDocument(String _id) throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
-        Document document = defaultDb.getDocument(_id);
+        ensureInitialized();
+        Document document = mDatabase.getDocument(_id);
         if (document != null) {
-            defaultDb.delete(document);
+            mDatabase.delete(document);
         }
     }
 
-    public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
-        DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
-        if (!mDatabase.containsKey(_name)) {
-            defaultDatabase = _name;
-            // Database.setLogLevel(LogDomain.REPLICATOR, LogLevel.VERBOSE);
-            mDatabase.put(_name, new Database(_name, config));
-        }
-    }
-
-    public void delete() throws CouchbaseLiteException {
-        Database defaultDb = getDatabase();
-        defaultDb.delete();
-        mDatabase.clear();
-    }
 
     public String setReplicatorEndpoint(String _endpoint) throws URISyntaxException {
+        ensureInitialized();
         Endpoint targetEndpoint = new URLEndpoint(new URI(_endpoint));
-        mReplConfig = new ReplicatorConfiguration(mDatabase.get(defaultDatabase), targetEndpoint);
-        return mReplConfig.getTarget().toString();
+        mReplicatorConfig = new ReplicatorConfiguration(mDatabase, targetEndpoint);
+        return mReplicatorConfig.getTarget().toString();
     }
 
     public String setReplicatorType(String _type) throws CouchbaseLiteException {
@@ -207,35 +215,35 @@ public class CBManager {
         } else if (_type.equals("PUSH_AND_PULL")) {
             settedType = ReplicatorConfiguration.ReplicatorType.PUSH_AND_PULL;
         }
-        mReplConfig.setReplicatorType(settedType);
+        mReplicatorConfig.setReplicatorType(settedType);
         return settedType.toString();
     }
 
     public String setReplicatorBasicAuthentication(Map<String, String> _auth) throws Exception {
         if (_auth.containsKey("username") && _auth.containsKey("password")) {
-            mReplConfig.setAuthenticator(new BasicAuthenticator(_auth.get("username"), _auth.get("password")));
+            mReplicatorConfig.setAuthenticator(new BasicAuthenticator(_auth.get("username"), _auth.get("password")));
         } else {
             throw new Exception();
         }
-        return mReplConfig.getAuthenticator().toString();
+        return mReplicatorConfig.getAuthenticator().toString();
     }
 
     public String setReplicatorSessionAuthentication(String sessionID) throws Exception {
         if (sessionID != null) {
-            mReplConfig.setAuthenticator(new SessionAuthenticator(sessionID));
+            mReplicatorConfig.setAuthenticator(new SessionAuthenticator(sessionID));
         } else {
             throw new Exception();
         }
-        return mReplConfig.getAuthenticator().toString();
+        return mReplicatorConfig.getAuthenticator().toString();
     }
 
     public boolean setReplicatorContinuous(boolean _continuous) {
-        mReplConfig.setContinuous(_continuous);
-        return mReplConfig.isContinuous();
+        mReplicatorConfig.setContinuous(_continuous);
+        return mReplicatorConfig.isContinuous();
     }
 
     public void initReplicator() {
-        mReplicator = new Replicator(mReplConfig);
+        mReplicator = new Replicator(mReplicatorConfig);
     }
 
     public void startReplicator() {
@@ -245,10 +253,6 @@ public class CBManager {
     public void stopReplicator() {
         mReplicator.stop();
         mReplicator = null;
-    }
-
-    public Replicator getReplicator() {
-        return mReplicator;
     }
 
     @SuppressWarnings("unchecked")
@@ -283,18 +287,18 @@ public class CBManager {
     }
 
 
-    private void removeAttachmentsPath(final Object object){
-        if(object instanceof  Map){
+    private void removeAttachmentsPath(final Object object) {
+        if (object instanceof Map) {
             Map<String, Object> map = ((Map<String, Object>) object);
-            if(map.containsKey("contentType")){
+            if (map.containsKey("contentType")) {
                 map.remove("path");
             }
-            for(String key:map.keySet()){
+            for (String key : map.keySet()) {
                 removeAttachmentsPath(map.get(key));
             }
-        }else if(object instanceof List){
+        } else if (object instanceof List) {
             List<Object> list = (List<Object>) object;
-            for(Object o:list){
+            for (Object o : list) {
                 removeAttachmentsPath(o);
             }
         }
@@ -321,5 +325,9 @@ public class CBManager {
             return l;
         }
         return object;
+    }
+
+    private void ensureInitialized() {
+        if (mDatabase == null) throw new IllegalStateException("Database not initialized yet");
     }
 }
