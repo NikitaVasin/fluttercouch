@@ -2,9 +2,13 @@ package it.oltrenuovefrontiere.fluttercouch;
 
 import android.content.Context;
 
+import com.couchbase.lite.AbstractReplicator;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.Query;
+import com.couchbase.lite.Replicator;
+import com.couchbase.lite.ReplicatorChange;
+import com.couchbase.lite.ReplicatorChangeListener;
 
 import org.json.JSONObject;
 
@@ -25,16 +29,17 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import android.content.res.AssetManager;
 import android.content.res.AssetFileDescriptor;
-import java.io.File;
+import android.util.Log;
+
 
 /**
  * FluttercouchPlugin
  */
 public class FluttercouchPlugin implements MethodCallHandler {
 
-    HashMap<String, CBManager> managers = new HashMap<>();
+    public static FluttercouchPlugin instance;
 
-    static Context context;
+    HashMap<String, CBManager> managers = new HashMap<>();
 
     Registrar registrar;
 
@@ -42,11 +47,45 @@ public class FluttercouchPlugin implements MethodCallHandler {
      * Plugin registration.
      */
     public static void registerWith(Registrar registrar) {
-        context = registrar.context();
-        final FluttercouchPlugin flutterCouchPlugin = new FluttercouchPlugin();
-        flutterCouchPlugin.registrar = registrar;
+        instance = new FluttercouchPlugin();
+        instance.registrar = registrar;
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "it.oltrenuovefrontiere.fluttercouch");
-        channel.setMethodCallHandler(flutterCouchPlugin);
+        channel.setMethodCallHandler(instance);
+    }
+
+    public static void destroy() {
+        if (instance != null) instance.onDestroy();
+    }
+
+    public void onDestroy() {
+        //close all managers
+        Log.e("TAG", "closeAllManagers");
+        for (final CBManager manager : managers.values()) {
+            Replicator replicator = manager.getReplicator();
+            if (replicator != null && replicator.getStatus().getActivityLevel() != AbstractReplicator.ActivityLevel.STOPPED) {
+                manager.addReplicationChangeListener(new ReplicatorChangeListener() {
+                    @Override
+                    public void changed(ReplicatorChange replicatorChange) {
+                        try {
+                            if (replicatorChange.getStatus().getActivityLevel() == AbstractReplicator.ActivityLevel.STOPPED) {
+                                manager.close();
+                            }
+                        } catch (CouchbaseLiteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                manager.stopReplicator();
+            } else {
+                try {
+                    manager.close();
+                } catch (CouchbaseLiteException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        managers.clear();
     }
 
     @Override
@@ -84,7 +123,7 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 break;
             case ("deleteDatabase"):
                 try {
-                   cbManager.delete();
+                    cbManager.delete();
                     result.success(null);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -94,12 +133,12 @@ public class FluttercouchPlugin implements MethodCallHandler {
             case ("prebuildDatabase"):
                 String assetPath = call.argument("assetPath");
                 try {
-                    Context context = FluttercouchPlugin.context;
+                    Context context = FluttercouchPlugin.instance.registrar.context();
                     if (!Database.exists(_name, context.getFilesDir())) {
-                        InputStream in = context.getAssets().open("flutter_assets/"+assetPath);
+                        InputStream in = context.getAssets().open("flutter_assets/" + assetPath);
                         ZipUtils.unzip(in, context.getFilesDir());
                         result.success(true);
-                    }else{
+                    } else {
                         result.success(false);
                     }
                 } catch (Exception e) {
@@ -165,7 +204,7 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 String filePath = call.argument("filePath");
                 FileDescriptor fileDescriptor;
                 InputStream inputStream;
-                if (filePath.contains("asset://"))  {
+                if (filePath.contains("asset://")) {
                     filePath = filePath.replace("asset://", "");
                     AssetManager assetManager = registrar.context().getAssets();
                     String assetKey = registrar.lookupKeyForAsset(filePath);
@@ -173,7 +212,7 @@ public class FluttercouchPlugin implements MethodCallHandler {
                         AssetFileDescriptor fd = assetManager.openFd(assetKey);
                         inputStream = fd.createInputStream();
                     } catch (Throwable e) {
-                        result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                        result.error("errSave", "error add attachment " + filePath + " to document " + documentId, e.toString());
                         return;
                     }
                 } else {
@@ -181,15 +220,15 @@ public class FluttercouchPlugin implements MethodCallHandler {
                     try {
                         inputStream = new FileInputStream(file);
                     } catch (FileNotFoundException e) {
-                        result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                        result.error("errSave", "error add attachment " + filePath + " to document " + documentId, e.toString());
                         return;
                     }
                 }
-                try{
+                try {
                     result.success(cbManager.addAttachment(documentId, contentType, inputStream));
-                } catch (CouchbaseLiteException e){
+                } catch (CouchbaseLiteException e) {
                     e.printStackTrace();
-                    result.error("errSave", "error add attachment " +filePath+" to document " + documentId, e.toString());
+                    result.error("errSave", "error add attachment " + filePath + " to document " + documentId, e.toString());
                 }
                 break;
             case ("removeAttachment"):

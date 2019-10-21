@@ -40,7 +40,7 @@ public class CBManager {
     private Replicator mReplicator;
 
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
-        DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
+        DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.instance.registrar.context());
         if (mDatabase == null) {
             mDatabase = new Database(_name, config);
         }
@@ -253,6 +253,10 @@ public class CBManager {
     public void stopReplicator() {
         mReplicator.stop();
         mReplicator = null;
+    }
+
+    public Replicator getReplicator(){
+        return mReplicator;
     }
 
     @SuppressWarnings("unchecked")

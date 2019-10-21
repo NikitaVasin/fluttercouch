@@ -133,7 +133,7 @@ abstract class Fluttercouch {
       return await _methodChannel.invokeMethod(
           'closeDatabase', {"db": dbName,});
     } on PlatformException catch (e) {
-      throw 'unable to delete Database $dbName: ${e.message}';
+      throw 'unable to close Database $dbName: ${e.message}';
     }
   }
 
