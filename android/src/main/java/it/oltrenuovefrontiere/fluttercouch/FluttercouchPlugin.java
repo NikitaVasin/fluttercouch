@@ -135,7 +135,7 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 try {
                     Context context = FluttercouchPlugin.instance.registrar.context();
                     if (!Database.exists(_name, context.getFilesDir())) {
-                        InputStream in = context.getAssets().open("flutter_assets/" + assetPath);
+                        InputStream in = context.getAssets().open(assetPath);
                         ZipUtils.unzip(in, context.getFilesDir());
                         result.success(true);
                     } else {
