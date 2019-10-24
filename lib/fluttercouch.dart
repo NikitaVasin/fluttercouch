@@ -262,12 +262,12 @@ abstract class Fluttercouch {
     }
   }
 
-  void listenReplicationEvents(Function(dynamic) function) {
-    _replicationEventChannel.receiveBroadcastStream().listen(function);
+  Stream<dynamic> replicationEvents() {
+    return _replicationEventChannel.receiveBroadcastStream();
   }
 
-  void listenDocumentChangeEvents(Function(dynamic) function) {
-    _documentChangeEventListener.receiveBroadcastStream().listen(function);
+  Stream<dynamic> documentChangeEvents() {
+    return _documentChangeEventListener.receiveBroadcastStream();
   }
 
   void _assertInitialized() {
