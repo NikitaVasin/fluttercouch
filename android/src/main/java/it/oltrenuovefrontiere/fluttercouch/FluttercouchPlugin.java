@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -226,7 +227,7 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 }
                 try {
                     result.success(cbManager.addAttachment(documentId, contentType, inputStream));
-                } catch (CouchbaseLiteException e) {
+                } catch (CouchbaseLiteException | IOException e) {
                     e.printStackTrace();
                     result.error("errSave", "error add attachment " + filePath + " to document " + documentId, e.toString());
                 }
