@@ -24,7 +24,10 @@ import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.SessionAuthenticator;
 import com.couchbase.lite.URLEndpoint;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -165,14 +168,22 @@ public class CBManager {
         return resultMap;
     }
 
-    public String addAttachment(String _id, String contentType, InputStream inputStream) throws CouchbaseLiteException {
-        ensureInitialized();
-        MutableDocument document = mDatabase.getDocument(_id).toMutable();
-        String key = new RandomString(5, new Random()).nextString();
-        Blob b = new Blob(contentType, inputStream/*new File(filePath).toURI().toURL()*/);
-        document.setBlob(key, b);
-        mDatabase.save(document);
-        return key;
+    public String addAttachment(String _id, String contentType, InputStream is) throws CouchbaseLiteException, IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try {
+            ensureInitialized();
+            MutableDocument document = mDatabase.getDocument(_id).toMutable();
+            String key = new RandomString(5, new Random()).nextString();
+            IOUtils.inputStreamToOutputStream(is, os);
+            Blob b = new Blob(contentType, os.toByteArray());
+            document.setBlob(key, b);
+            mDatabase.save(document);
+            return key;
+        } finally {
+            IOUtils.closeSafe(is);
+            IOUtils.closeSafe(os);
+        }
+
     }
 
     public void removeAttachment(String _id, String key) throws CouchbaseLiteException {
@@ -255,7 +266,7 @@ public class CBManager {
         mReplicator = null;
     }
 
-    public Replicator getReplicator(){
+    public Replicator getReplicator() {
         return mReplicator;
     }
 
