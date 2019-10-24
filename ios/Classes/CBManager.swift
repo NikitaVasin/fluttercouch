@@ -215,7 +215,8 @@ class CBManager {
         if let defaultDb: Database = getDatabase() {
             if let doc: MutableDocument = defaultDb.document(withID: docId)?.toMutable() {
                 let key = String((0..<5).map{ _ in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()! })//String(Int.random(in: 0 ..< 99999)) //TODO random String
-                let blob = try Blob(contentType: contentType, fileURL: URL.init(fileURLWithPath: filePath))
+//                let blob = try Blob(contentType: contentType, fileURL: URL.init(fileURLWithPath: filePath))
+                let blob = try Blob(contentType: contentType, data: Data.init(contentsOf: URL.init(fileURLWithPath: filePath)))
                 doc.setBlob(blob, forKey: key)
                 try defaultDb.saveDocument(doc)
                 return key;
