@@ -3,7 +3,7 @@ import 'package:fluttercouch/query/expression/property_expression.dart';
 import 'package:fluttercouch/query/expression/variable_expression.dart';
 
 abstract class Expression {
-  final List<Map<String, dynamic>> internalExpressionStack = new List();
+  final List<Map<String, dynamic>> internalExpressionStack = [];
 
   factory Expression.booleanValue(bool value) {
     return VariableExpression({"booleanValue": value});
@@ -134,7 +134,7 @@ abstract class Expression {
   }
 
   Expression _addExpression(String selector, Expression expression,
-      {String secondSelector, Expression secondExpression}) {
+      {String? secondSelector, Expression? secondExpression}) {
     if (secondSelector != null && secondExpression != null) {
       internalExpressionStack.add({
         selector: expression.internalExpressionStack,

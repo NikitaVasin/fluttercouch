@@ -11,12 +11,12 @@ class Having extends Query {
     this.param = new Parameters();
   }
 
-  Limit limit(Expression expression, {Expression offset}) {
+  Limit limit(Expression expression, {Expression? offset}) {
     var resultQuery = new Limit();
     resultQuery.options = this.options;
-    resultQuery.options["limit"] = expression;
+    resultQuery.options!["limit"] = expression;
     if (offset != null) {
-      resultQuery.options["offset"] = offset;
+      resultQuery.options!["offset"] = offset;
     }
     return resultQuery;
   }
@@ -24,9 +24,9 @@ class Having extends Query {
   OrderBy orderBy(List<Ordering> orderingList) {
     var resultQuery = new OrderBy();
     resultQuery.options = this.options;
-    resultQuery.options["orderBy"] = orderingList;
+    resultQuery.options!["orderBy"] = orderingList;
     return resultQuery;
   }
 
-  Map<String, dynamic> toJson() => options;
+  Map<String, dynamic>? toJson() => options;
 }

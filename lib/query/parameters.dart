@@ -1,5 +1,5 @@
 class Parameters {
-  Map<String, dynamic> map;
+  late Map<String, dynamic> map;
 
   dynamic getValue(String name) {
     if (map.containsKey(name)) {

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fluttercouch/document.dart';
 
 void main() {
-  Document document;
+  late Document document;
   setUp(() {
     var initializer = new Map();
     initializer['string'] = "string";

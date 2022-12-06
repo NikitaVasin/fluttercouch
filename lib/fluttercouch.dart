@@ -5,18 +5,18 @@ import 'package:fluttercouch/document.dart';
 import 'package:meta/meta.dart';
 
 abstract class Fluttercouch {
-  String dbName;
+  String? dbName;
   MethodChannel _methodChannel =
   const MethodChannel('it.oltrenuovefrontiere.fluttercouch');
 
-  EventChannel _replicationEventChannel;
+  late EventChannel _replicationEventChannel;
 
-  EventChannel _documentChangeEventListener;
+  late EventChannel _documentChangeEventListener;
 
-  Future<String> initDatabaseWithName(String _name) async {
+  Future<String?> initDatabaseWithName(String _name) async {
     try {
       this.dbName = _name;
-      final String result = await _methodChannel.invokeMethod('initDatabaseWithName', _name);
+      final String? result = await _methodChannel.invokeMethod('initDatabaseWithName', _name);
       this._replicationEventChannel = EventChannel(
           "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel/" + _name);
       this._documentChangeEventListener = EventChannel(
@@ -27,7 +27,7 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<bool> prebuildDatabase(String assetPath, String _name) async {
+  Future<bool?> prebuildDatabase(String assetPath, String _name) async {
     this.dbName = _name;
     try {
       return await _methodChannel.invokeMethod(
@@ -37,10 +37,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> saveDocument(Document _doc) async {
+  Future<String?> saveDocument(Document _doc) async {
     _assertInitialized();
     try {
-      final String result =
+      final String? result =
       await _methodChannel.invokeMethod(
           'saveDocument', {"db": this.dbName, "document": _doc.toMap()});
       return result;
@@ -49,10 +49,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> saveDocumentWithId(String _id, Document _doc) async {
+  Future<String?> saveDocumentWithId(String _id, Document _doc) async {
     _assertInitialized();
     try {
-      final String result = await _methodChannel.invokeMethod(
+      final String? result = await _methodChannel.invokeMethod(
           'saveDocumentWithId',
           <String, dynamic>{"db": this.dbName, 'id': _id, 'map': _doc.toMap()});
       return result;
@@ -62,17 +62,17 @@ abstract class Fluttercouch {
   }
 
   Future<Document> getDocumentWithId(String _id) async {
-    Map<dynamic, dynamic> _docResult;
+    Map<dynamic, dynamic>? _docResult;
     _docResult = await _getDocumentWithId(_id);
-    return Document(_docResult["doc"], _docResult["id"]);
+    return Document(_docResult!["doc"], _docResult["id"]);
   }
 
-  Future<List<Document>> getDocumentsWith({@required String key, @required String value}) async {
+  Future<List<Document>?> getDocumentsWith({required String key, required String value}) async {
     _assertInitialized();
     try {
-      final Map<dynamic, dynamic> result = await _methodChannel
-          .invokeMethod('getDocumentsWithKey', {"db": this.dbName, "key": key, "value": value});
-      List<Document> documents = result["docs"] != null
+      final Map<dynamic, dynamic> result = await (_methodChannel
+          .invokeMethod('getDocumentsWithKey', {"db": this.dbName, "key": key, "value": value}) as FutureOr<Map<dynamic, dynamic>>);
+      List<Document>? documents = result["docs"] != null
           ? result["docs"]
           .map<Document>((v) => Document(v['doc'], v['id']))
           .toList()
@@ -83,12 +83,12 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<List<Document>> getAllDocuments() async {
+  Future<List<Document>?> getAllDocuments() async {
     _assertInitialized();
     try {
-      final Map<dynamic, dynamic> result = await _methodChannel
-          .invokeMethod('getAllDocuments', {"db": this.dbName});
-      List<Document> documents = result["docs"] != null
+      final Map<dynamic, dynamic> result = await (_methodChannel
+          .invokeMethod('getAllDocuments', {"db": this.dbName}) as FutureOr<Map<dynamic, dynamic>>);
+      List<Document>? documents = result["docs"] != null
           ? result["docs"]
           .map<Document>((v) => Document(v['doc'], v['id']))
           .toList()
@@ -100,10 +100,10 @@ abstract class Fluttercouch {
   }
 
 
-  Future<String> addAttachment(String documentId, String contentType, String filePath) async {
+  Future<String?> addAttachment(String documentId, String contentType, String filePath) async {
     _assertInitialized();
     try {
-      final String result = await _methodChannel.invokeMethod(
+      final String? result = await _methodChannel.invokeMethod(
           'addAttachment',
           {"db": this.dbName,
             "id": documentId,
@@ -116,7 +116,7 @@ abstract class Fluttercouch {
     }
   }
   
-  Future<bool> removeAttachment(String documentId, String key) async {
+  Future<bool?> removeAttachment(String documentId, String key) async {
     _assertInitialized();
     try{
       return await _methodChannel.invokeMethod('removeAttachment', {"db": this.dbName,
@@ -149,7 +149,7 @@ abstract class Fluttercouch {
   Future purgeDocumentById(String docId) async {
     _assertInitialized();
     try {
-      final bool result = await _methodChannel.invokeMethod(
+      final bool? result = await _methodChannel.invokeMethod(
           'purgeDocument', {"db": this.dbName, "id": docId});
       return result;
     } on PlatformException {
@@ -157,10 +157,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<bool> deleteDocumentById(String docId) async {
+  Future<bool?> deleteDocumentById(String docId) async {
     _assertInitialized();
     try {
-      final bool result = await _methodChannel.invokeMethod(
+      final bool? result = await _methodChannel.invokeMethod(
           'deleteDocument', {"db": this.dbName, "id": docId});
       return result;
     } on PlatformException {
@@ -168,10 +168,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> setReplicatorEndpoint(String _endpoint) async {
+  Future<String?> setReplicatorEndpoint(String _endpoint) async {
     _assertInitialized();
     try {
-      final String result =
+      final String? result =
       await _methodChannel.invokeMethod(
           'setReplicatorEndpoint', {"db": this.dbName, "endpoint": _endpoint});
       return result;
@@ -180,10 +180,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> setReplicatorType(String _type) async {
+  Future<String?> setReplicatorType(String _type) async {
     _assertInitialized();
     try {
-      final String result =
+      final String? result =
       await _methodChannel.invokeMethod('setReplicatorType', {"db": this.dbName, "type": _type});
       return result;
     } on PlatformException {
@@ -191,10 +191,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<bool> setReplicatorContinuous(bool _continuous) async {
+  Future<bool?> setReplicatorContinuous(bool _continuous) async {
     _assertInitialized();
     try {
-      final bool result = await _methodChannel.invokeMethod(
+      final bool? result = await _methodChannel.invokeMethod(
           'setReplicatorContinuous', {"db": this.dbName, "continuous": _continuous});
       return result;
     } on PlatformException {
@@ -202,10 +202,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> setReplicatorBasicAuthentication(Map<String, String> _auth) async {
+  Future<String?> setReplicatorBasicAuthentication(Map<String, String> _auth) async {
     _assertInitialized();
     try {
-      final String result = await _methodChannel.invokeMethod(
+      final String? result = await _methodChannel.invokeMethod(
           'setReplicatorBasicAuthentication', {"db": this.dbName, "auth": _auth});
       return result;
     } on PlatformException {
@@ -213,10 +213,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String> setReplicatorSessionAuthentication(String _sessionID) async {
+  Future<String?> setReplicatorSessionAuthentication(String _sessionID) async {
     _assertInitialized();
     try {
-      final String result = await _methodChannel.invokeMethod(
+      final String? result = await _methodChannel.invokeMethod(
           'setReplicatorSessionAuthentication', {"db": this.dbName, "sessiodID": _sessionID});
       return result;
     } on PlatformException {
@@ -251,10 +251,10 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<Map<dynamic, dynamic>> _getDocumentWithId(String _id) async {
+  Future<Map<dynamic, dynamic>?> _getDocumentWithId(String _id) async {
     _assertInitialized();
     try {
-      final Map<dynamic, dynamic> result =
+      final Map<dynamic, dynamic>? result =
       await _methodChannel.invokeMethod('getDocumentWithId', {"db": this.dbName, "id": _id});
       return result;
     } on PlatformException {

@@ -1,7 +1,7 @@
 import 'package:fluttercouch/query/expression/expression.dart';
 
 class Functions extends Object with Expression {
-  final List<Map<String, dynamic>> internalExpressionStack = new List();
+  final List<Map<String, dynamic>> internalExpressionStack = [];
 
   Functions(Map<String, dynamic> _passedInternalExpression) {
     this.internalExpressionStack.add(_passedInternalExpression);
@@ -103,7 +103,7 @@ class Functions extends Object with Expression {
     return Functions({"radians": expression});
   }
 
-  factory Functions.round(Expression expression, {Expression digits}) {
+  factory Functions.round(Expression expression, {Expression? digits}) {
     if (digits != null) {
       return Functions({"round": expression, "digits": digits});
     } else {
@@ -139,7 +139,7 @@ class Functions extends Object with Expression {
     return Functions({"trim": expression});
   }
 
-  factory Functions.trunc(Expression expression, {Expression digits}) {
+  factory Functions.trunc(Expression expression, {Expression? digits}) {
     if (digits != null) {
       return Functions({"trunc": expression, "digits": digits});
     } else {

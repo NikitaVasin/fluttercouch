@@ -7,5 +7,5 @@ class Limit extends Query {
     this.param = new Parameters();
   }
 
-  Map<String, dynamic> toJson() => options;
+  Map<String, dynamic>? toJson() => options;
 }

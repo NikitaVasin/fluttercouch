@@ -2,7 +2,7 @@ import 'package:fluttercouch/document.dart';
 
 class MutableDocument extends Document {
 
-  MutableDocument({Map<dynamic, dynamic> map, String id}) {
+  MutableDocument({Map<dynamic, dynamic>? map, String? id}) {
     if (map != null) {
       super.internalState = super.stringMapFromDynamic(map);
     } else {
@@ -14,7 +14,7 @@ class MutableDocument extends Document {
 
   setValue(String key, Object value) {
     if (value != null) {
-      super.internalState[key] = value;
+      super.internalState![key] = value;
     }
   }
 
@@ -39,6 +39,6 @@ class MutableDocument extends Document {
   }
 
   remove(String key) {
-    super.internalState.remove(key);
+    super.internalState!.remove(key);
   }
 }

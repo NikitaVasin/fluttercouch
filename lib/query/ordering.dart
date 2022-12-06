@@ -1,7 +1,7 @@
 import 'package:fluttercouch/query/expression/expression.dart';
 
 class Ordering {
-  Expression _internalExpression;
+  late Expression _internalExpression;
 
   Ordering._internal(Expression _expression) {
     this._internalExpression = _expression;

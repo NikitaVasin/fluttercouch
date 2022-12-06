@@ -11,9 +11,9 @@ class Select extends Query {
   From from(String databaseName) {
     var resultQuery = new From();
     resultQuery.options = this.options;
-    options["from"] = databaseName;
+    options!["from"] = databaseName;
     return resultQuery;
   }
 
-  Map<String, dynamic> toJson() => options;
+  Map<String, dynamic>? toJson() => options;
 }

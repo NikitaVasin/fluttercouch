@@ -1,7 +1,7 @@
 import 'package:fluttercouch/query/expression/expression.dart';
 
 class SelectResult {
-  Expression _internalExpression;
+  late Expression _internalExpression;
 
   SelectResult._internal(Expression _expression) {
     this._internalExpression = _expression;

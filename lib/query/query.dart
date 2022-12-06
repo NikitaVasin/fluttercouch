@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'parameters.dart';
 
 class Query {
-  Map<String, dynamic> options;
-  Parameters param;
+  Map<String, dynamic>? options;
+  Parameters? param;
 
   static const MessageCodec<dynamic> _json = const JSONMessageCodec();
 
@@ -21,9 +21,9 @@ class Query {
     this.param = new Parameters();
   }
 
-  Future<Map<String, dynamic>> execute() async {
+  Future<Map<String, dynamic>?> execute() async {
     try {
-      final Map<String, dynamic> result = await _channel.invokeMethod(
+      final Map<String, dynamic>? result = await _channel.invokeMethod(
           'execute', this);
       return result;
     } on PlatformException catch (e) {
@@ -35,7 +35,7 @@ class Query {
     return "";
   }
 
-  Parameters getParameters() {
+  Parameters? getParameters() {
     return param;
   }
 
@@ -43,5 +43,5 @@ class Query {
     param = parameters;
   }
 
-  Map<String, dynamic> toJson() => options;
+  Map<String, dynamic>? toJson() => options;
 }
