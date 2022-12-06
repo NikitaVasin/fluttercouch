@@ -7,9 +7,9 @@ import 'package:fluttercouch/query/query.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 class AppModel extends Model with Fluttercouch {
-  String _databaseName;
-  Document docExample;
-  Query query;
+  late String _databaseName;
+  late Document docExample;
+  late Query query;
 
   AppModel() {
     initPlatformState();
@@ -17,7 +17,7 @@ class AppModel extends Model with Fluttercouch {
 
   initPlatformState() async {
     try {
-      _databaseName = await initDatabaseWithName("infodiocesi");
+      _databaseName = await initDatabaseWithName("infodiocesi") ?? '';
       setReplicatorEndpoint("ws://localhost:4984/infodiocesi");
       setReplicatorType("PUSH_AND_PULL");
       setReplicatorBasicAuthentication(<String, String>{
@@ -60,9 +60,9 @@ class Home extends StatelessWidget {
             new Text("This is an example app"),
             new ScopedModelDescendant<AppModel>(
               builder: (context, child, model) => new Text(
-                    'Ciao',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                'Ciao',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
           ],
         ),

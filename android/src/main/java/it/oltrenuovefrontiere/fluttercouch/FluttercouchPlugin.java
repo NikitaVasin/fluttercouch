@@ -22,6 +22,9 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -32,30 +35,49 @@ import android.content.res.AssetManager;
 import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 
 /**
  * FluttercouchPlugin
  */
-public class FluttercouchPlugin implements MethodCallHandler {
-
-    public static FluttercouchPlugin instance;
+public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin, ActivityAware {
 
     HashMap<String, CBManager> managers = new HashMap<>();
 
-    Registrar registrar;
+    private FlutterPluginBinding binding;
+    static public Context context;
 
-    /**
-     * Plugin registration.
-     */
-    public static void registerWith(Registrar registrar) {
-        instance = new FluttercouchPlugin();
-        instance.registrar = registrar;
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "it.oltrenuovefrontiere.fluttercouch");
-        channel.setMethodCallHandler(instance);
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        final MethodChannel channel = new MethodChannel(binding.getBinaryMessenger(), "it.oltrenuovefrontiere.fluttercouch");
+        channel.setMethodCallHandler(this);
+        this.binding = binding;
     }
 
-    public static void destroy() {
-        if (instance != null) instance.onDestroy();
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        this.binding = null;
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        context = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        context = null;
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        context = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        context = null;
     }
 
     public void onDestroy() {
@@ -102,9 +124,9 @@ public class FluttercouchPlugin implements MethodCallHandler {
         switch (call.method) {
             case ("initDatabaseWithName"):
                 try {
-                    final EventChannel eventChannel = new EventChannel(registrar.messenger(), "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel/" + _name);
+                    final EventChannel eventChannel = new EventChannel(binding.getBinaryMessenger(), "it.oltrenuovefrontiere.fluttercouch/replicationEventChannel/" + _name);
                     eventChannel.setStreamHandler(new ReplicationEventListener(cbManager));
-                    final EventChannel docEventChannel = new EventChannel(registrar.messenger(), "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener/" + _name);
+                    final EventChannel docEventChannel = new EventChannel(binding.getBinaryMessenger(), "it.oltrenuovefrontiere.fluttercouch/documentChangeEventListener/" + _name);
                     docEventChannel.setStreamHandler(new DocumentChangeEventListener(cbManager));
                     cbManager.initDatabaseWithName(_name);
                     result.success(_name);
@@ -134,7 +156,6 @@ public class FluttercouchPlugin implements MethodCallHandler {
             case ("prebuildDatabase"):
                 String assetPath = call.argument("assetPath");
                 try {
-                    Context context = FluttercouchPlugin.instance.registrar.context();
                     if (!Database.exists(_name, context.getFilesDir())) {
                         InputStream in = context.getAssets().open(assetPath);
                         ZipUtils.unzip(in, context.getFilesDir());
@@ -207,10 +228,10 @@ public class FluttercouchPlugin implements MethodCallHandler {
                 InputStream inputStream;
                 if (filePath.contains("asset://")) {
                     filePath = filePath.replace("asset://", "");
-                    AssetManager assetManager = registrar.context().getAssets();
-                    String assetKey = registrar.lookupKeyForAsset(filePath);
+                    AssetManager assetManager = context.getAssets();
+
                     try {
-                        AssetFileDescriptor fd = assetManager.openFd(assetKey);
+                        AssetFileDescriptor fd = assetManager.openFd(filePath);
                         inputStream = fd.createInputStream();
                     } catch (Throwable e) {
                         result.error("errSave", "error add attachment " + filePath + " to document " + documentId, e.toString());
