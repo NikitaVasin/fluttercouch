@@ -5,12 +5,9 @@ import android.content.Context;
 import com.couchbase.lite.AbstractReplicator;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Database;
-import com.couchbase.lite.Query;
 import com.couchbase.lite.Replicator;
 import com.couchbase.lite.ReplicatorChange;
 import com.couchbase.lite.ReplicatorChangeListener;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -23,14 +20,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
-import io.flutter.embedding.engine.plugins.activity.ActivityAware;
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 import android.content.res.AssetManager;
 import android.content.res.AssetFileDescriptor;
 import android.util.Log;
@@ -41,7 +35,7 @@ import androidx.annotation.NonNull;
 /**
  * FluttercouchPlugin
  */
-public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin, ActivityAware {
+public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin {
 
     HashMap<String, CBManager> managers = new HashMap<>();
 
@@ -53,34 +47,12 @@ public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin, Act
         final MethodChannel channel = new MethodChannel(binding.getBinaryMessenger(), "it.oltrenuovefrontiere.fluttercouch");
         channel.setMethodCallHandler(this);
         this.binding = binding;
+        context = binding.getApplicationContext();
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         this.binding = null;
-    }
-
-    @Override
-    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        context = binding.getActivity();
-    }
-
-    @Override
-    public void onDetachedFromActivityForConfigChanges() {
-        context = null;
-    }
-
-    @Override
-    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        context = binding.getActivity();
-    }
-
-    @Override
-    public void onDetachedFromActivity() {
-        context = null;
-    }
-
-    public void onDestroy() {
         //close all managers
         Log.e("TAG", "closeAllManagers");
         for (final CBManager manager : managers.values()) {
@@ -110,6 +82,26 @@ public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin, Act
         }
         managers.clear();
     }
+//
+//    @Override
+//    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+//        context = binding.getActivity();
+//    }
+//
+//    @Override
+//    public void onDetachedFromActivityForConfigChanges() {
+//        context = null;
+//    }
+//
+//    @Override
+//    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+//        context = binding.getActivity();
+//    }
+//
+//    @Override
+//    public void onDetachedFromActivity() {
+//        context = null;
+//    }
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {

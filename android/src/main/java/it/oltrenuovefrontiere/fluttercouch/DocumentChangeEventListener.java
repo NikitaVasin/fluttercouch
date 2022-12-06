@@ -1,9 +1,8 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
-import com.couchbase.lite.CouchbaseLiteException;
-import com.couchbase.lite.ListenerToken;
 import com.couchbase.lite.DatabaseChange;
 import com.couchbase.lite.DatabaseChangeListener;
+import com.couchbase.lite.ListenerToken;
 
 import io.flutter.plugin.common.EventChannel;
 
