@@ -1,7 +1,10 @@
 package it.oltrenuovefrontiere.fluttercouch;
 
+import android.util.Log;
+
 import com.couchbase.lite.BasicAuthenticator;
 import com.couchbase.lite.Blob;
+import com.couchbase.lite.CouchbaseLite;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DataSource;
 import com.couchbase.lite.Database;
@@ -27,7 +30,6 @@ import com.couchbase.lite.URLEndpoint;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -41,12 +43,15 @@ public class CBManager {
     private Database mDatabase;
     private ReplicatorConfiguration mReplicatorConfig;
     private Replicator mReplicator;
+    private String attachPath;
 
     public void initDatabaseWithName(String _name) throws CouchbaseLiteException {
-        DatabaseConfiguration config = new DatabaseConfiguration(FluttercouchPlugin.context);
+        CouchbaseLite.init(FluttercouchPlugin.context);
+        DatabaseConfiguration config = new DatabaseConfiguration();
         if (mDatabase == null) {
             mDatabase = new Database(_name, config);
         }
+        attachPath = mDatabase.getPath();
     }
 
     public void close() throws CouchbaseLiteException {
@@ -232,7 +237,7 @@ public class CBManager {
 
     public String setReplicatorBasicAuthentication(Map<String, String> _auth) throws Exception {
         if (_auth.containsKey("username") && _auth.containsKey("password")) {
-            mReplicatorConfig.setAuthenticator(new BasicAuthenticator(_auth.get("username"), _auth.get("password")));
+            mReplicatorConfig.setAuthenticator(new BasicAuthenticator(_auth.get("username"), _auth.get("password").toCharArray()));
         } else {
             throw new Exception();
         }
@@ -270,16 +275,22 @@ public class CBManager {
         return mReplicator;
     }
 
+    private String getBlobPath(Blob blob) {
+        return  attachPath +"Attachments/" + blob.digest().substring(5).replace("/", "_") + ".blob";
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> processDoc(Document document) {
         Map<String, Object> retrievedDocument = new HashMap<>(document.toMap());
         Map<String, Object> attachmentsPath = new HashMap<>();
+
         for (String key : retrievedDocument.keySet()) {
             Blob b = document.getBlob(key);
             if (b != null) {
-                attachmentsPath.put(key, b.getFilePath());
+                attachmentsPath.put(key, getBlobPath(b));
             }
         }
+
         for (String key : attachmentsPath.keySet()) {
             retrievedDocument.remove(key);
         }
@@ -289,7 +300,7 @@ public class CBManager {
                 Object b = attachments.get(key);
 
                 if (b instanceof Blob) {
-                    attachmentsPath.put(key, ((Blob) b).getFilePath());
+                    attachmentsPath.put(key, getBlobPath(((Blob) b)));
                 }
             }
             retrievedDocument.remove("_attachments");

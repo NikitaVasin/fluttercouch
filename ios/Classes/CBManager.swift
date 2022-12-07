@@ -15,6 +15,7 @@ class CBManager {
     private var mReplConfig : ReplicatorConfiguration! = nil;
     private var mReplicator : Replicator! = nil;
     private var defaultDatabase = "defaultDatabase";
+    private var attachPath = "";
     
     init() {}
     
@@ -52,8 +53,8 @@ class CBManager {
                         mutableMap[key] = blob
                     }
                 }
-                let resultMap = removeAttachmentsPath(object: mutableMap as NSDictionary)
-                let mutableDocument: MutableDocument = MutableDocument(id: id, data: mutableMap as? Dictionary<String, Any>)
+                _ = removeAttachmentsPath(object: mutableMap as NSDictionary)
+                let mutableDocument: MutableDocument = MutableDocument(id: id, data: (mutableMap as? Dictionary<String, Any>)!)
                 try defaultDb.saveDocument(mutableDocument)
                 return mutableDocument.id
             }
@@ -105,7 +106,10 @@ class CBManager {
         return object;
     }
     
-    
+    func getBlobPath(blob: Blob) -> String {
+        let index = blob.digest!.index(blob.digest!.startIndex, offsetBy: 5)
+        return "\(attachPath)Attachments/\(blob.digest!.substring(from: index).replacingOccurrences(of: "/", with: "_")).blob"
+    }
     
     func processDoc (document: Document) -> NSDictionary? {
         let dictionary: NSDictionary = document.toDictionary() as NSDictionary
@@ -113,7 +117,7 @@ class CBManager {
         let attachmentsPath = NSMutableDictionary()
         for (key, _) in retrievedDocument {
             if let blob = document.blob(forKey: (key as! String)){
-                 attachmentsPath[key] = blob.filePath
+                attachmentsPath[key] = getBlobPath(blob:blob)
             }
         }
         for (key, _) in attachmentsPath {
@@ -123,7 +127,7 @@ class CBManager {
             
             for (key, value) in attcahments {
                 if let blob = value as? Blob {
-                    attachmentsPath[key] = blob.filePath
+                    attachmentsPath[key] = getBlobPath(blob:blob)
                 }
             }
 
@@ -263,6 +267,7 @@ class CBManager {
                 // Database.setLogLevel(level: LogLevel.verbose, domain: LogDomain.replicator)
                 mDatabase[name] = newDatabase
                 defaultDatabase = name
+                attachPath = newDatabase.path ?? ""
             } catch {
                 print("Error initializing new database")
             }

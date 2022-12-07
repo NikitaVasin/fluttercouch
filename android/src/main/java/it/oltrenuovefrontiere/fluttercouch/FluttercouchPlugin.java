@@ -6,6 +6,7 @@ import com.couchbase.lite.AbstractReplicator;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.Replicator;
+import com.couchbase.lite.ReplicatorActivityLevel;
 import com.couchbase.lite.ReplicatorChange;
 import com.couchbase.lite.ReplicatorChangeListener;
 
@@ -57,12 +58,12 @@ public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin {
         Log.e("TAG", "closeAllManagers");
         for (final CBManager manager : managers.values()) {
             Replicator replicator = manager.getReplicator();
-            if (replicator != null && replicator.getStatus().getActivityLevel() != AbstractReplicator.ActivityLevel.STOPPED) {
+            if (replicator != null && replicator.getStatus().getActivityLevel() != ReplicatorActivityLevel.STOPPED) {
                 manager.addReplicationChangeListener(new ReplicatorChangeListener() {
                     @Override
                     public void changed(ReplicatorChange replicatorChange) {
                         try {
-                            if (replicatorChange.getStatus().getActivityLevel() == AbstractReplicator.ActivityLevel.STOPPED) {
+                            if (replicatorChange.getStatus().getActivityLevel() == ReplicatorActivityLevel.STOPPED) {
                                 manager.close();
                             }
                         } catch (CouchbaseLiteException e) {
@@ -82,26 +83,6 @@ public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin {
         }
         managers.clear();
     }
-//
-//    @Override
-//    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-//        context = binding.getActivity();
-//    }
-//
-//    @Override
-//    public void onDetachedFromActivityForConfigChanges() {
-//        context = null;
-//    }
-//
-//    @Override
-//    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-//        context = binding.getActivity();
-//    }
-//
-//    @Override
-//    public void onDetachedFromActivity() {
-//        context = null;
-//    }
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {

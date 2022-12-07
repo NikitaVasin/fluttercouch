@@ -91,9 +91,9 @@ abstract class Fluttercouch {
   Future<List<Document>?> getAllDocuments() async {
     _assertInitialized();
     try {
-      final Map<dynamic, dynamic> result = await (_methodChannel
-              .invokeMethod('getAllDocuments', {"db": this.dbName})
-          as FutureOr<Map<dynamic, dynamic>>);
+      final result = await _methodChannel
+              .invokeMapMethod('getAllDocuments', {"db": this.dbName}) ??
+          {};
       List<Document>? documents = result["docs"] != null
           ? result["docs"]
               .map<Document>((v) => Document(v['doc'], v['id']))
@@ -266,7 +266,7 @@ abstract class Fluttercouch {
   Future<Map<dynamic, dynamic>?> _getDocumentWithId(String _id) async {
     _assertInitialized();
     try {
-      final Map<dynamic, dynamic>? result = await _methodChannel
+      final result = await _methodChannel
           .invokeMethod('getDocumentWithId', {"db": this.dbName, "id": _id});
       return result;
     } on PlatformException {

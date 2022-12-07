@@ -15,12 +15,12 @@ A new flutter plugin project.
   s.source_files     = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  #s.dependency 'CouchbaseLite-Swift', '~> 2.1.0'
+  s.dependency 'CouchbaseLite-Swift', '~> 3.0.2'
+#  s.dependency 'CouchbaseLite-Swift', '~> 3.2.0'
   s.dependency 'SSZipArchive'
-  s.preserve_paths = 'CouchbaseLiteSwift.framework'
-  s.xcconfig = { 'OTHER_LDFLAGS' => '-framework CouchbaseLiteSwift' }
-  s.vendored_frameworks = 'CouchbaseLiteSwift.framework'
+#  s.preserve_paths = 'CouchbaseLiteSwift.framework'
+#  s.xcconfig = { 'OTHER_LDFLAGS' => '-framework CouchbaseLiteSwift' }
+#  s.vendored_frameworks = 'CouchbaseLiteSwift.framework'
   
   s.ios.deployment_target = '9.0'
 end
-

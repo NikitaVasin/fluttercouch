@@ -5,6 +5,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://mobile.maven.couchbase.com/maven2/dev/' }
     }
 
     dependencies {
@@ -16,9 +17,9 @@ rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
-        flatDir {
-            dirs 'libs'
-        }
+//        flatDir {
+//            dirs 'libs'
+//        }
     }
 }
 
@@ -28,7 +29,7 @@ android {
     compileSdkVersion 32
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 22
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     lintOptions {
@@ -37,7 +38,8 @@ android {
 
     dependencies {
         implementation 'com.squareup.okhttp3:okhttp:3.9.1'
-        implementation (name:'couchbase-lite-android-2.1.5-SNAPSHOT-release1', ext:'aar')
+        implementation 'com.couchbase.lite:couchbase-lite-android:3.0.0'
+//        implementation (name:'couchbase-lite-android-2.1.5-SNAPSHOT-release1', ext:'aar')
         testImplementation 'junit:junit:4.12'
         androidTestImplementation 'com.android.support.test:runner:1.0.2'
         androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
