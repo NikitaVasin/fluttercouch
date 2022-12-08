@@ -54,21 +54,16 @@ public class FluttercouchPlugin implements MethodCallHandler, FlutterPlugin {
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         this.binding = null;
-        //close all managers
-        Log.e("TAG", "closeAllManagers");
         for (final CBManager manager : managers.values()) {
             Replicator replicator = manager.getReplicator();
             if (replicator != null && replicator.getStatus().getActivityLevel() != ReplicatorActivityLevel.STOPPED) {
-                manager.addReplicationChangeListener(new ReplicatorChangeListener() {
-                    @Override
-                    public void changed(ReplicatorChange replicatorChange) {
-                        try {
-                            if (replicatorChange.getStatus().getActivityLevel() == ReplicatorActivityLevel.STOPPED) {
-                                manager.close();
-                            }
-                        } catch (CouchbaseLiteException e) {
-                            e.printStackTrace();
+                manager.addReplicationChangeListener(replicatorChange -> {
+                    try {
+                        if (replicatorChange.getStatus().getActivityLevel() == ReplicatorActivityLevel.STOPPED) {
+                            manager.close();
                         }
+                    } catch (CouchbaseLiteException e) {
+                        e.printStackTrace();
                     }
                 });
                 manager.stopReplicator();

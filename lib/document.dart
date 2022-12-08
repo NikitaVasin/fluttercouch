@@ -1,17 +1,16 @@
 import 'mutable_document.dart';
 
 class Document {
-  Map<String, dynamic>? internalState;
-  String? id;
+   Map<String, dynamic>? internalState;
+  final String id;
 
-  Document([Map<dynamic, dynamic>? _map, String? _id]) {
+  Document([Map<dynamic, dynamic>? _map, String? _id])
+      : this.id = _id != null ? _id : "random UUID" {
     if (_map != null) {
       internalState = stringMapFromDynamic(_map);
     } else {
       internalState = Map<String, dynamic>();
     }
-
-    _id != null ? this.id = _id : _id = "random UUID";
   }
 
   Map<String, dynamic> stringMapFromDynamic(Map<dynamic, dynamic> _map) {

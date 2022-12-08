@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:fluttercouch/document.dart';
-import 'package:meta/meta.dart';
 
 abstract class Fluttercouch {
   String? dbName;
@@ -40,12 +39,12 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<String?> saveDocument(Document _doc) async {
+  Future<String> saveDocument(Document _doc) async {
     _assertInitialized();
     try {
       final String? result = await _methodChannel.invokeMethod(
           'saveDocument', {"db": this.dbName, "document": _doc.toMap()});
-      return result;
+      return result!;
     } on PlatformException {
       throw 'unable to save the document';
     }
@@ -64,49 +63,54 @@ abstract class Fluttercouch {
   }
 
   Future<Document> getDocumentWithId(String _id) async {
-    Map<dynamic, dynamic>? _docResult;
+    Map<dynamic, dynamic> _docResult;
     _docResult = await _getDocumentWithId(_id);
-    return Document(_docResult!["doc"], _docResult["id"]);
+    return Document(_docResult["doc"], _docResult["id"]);
   }
 
-  Future<List<Document>?> getDocumentsWith(
-      {required String key, required String value}) async {
+  Future<List<Document>> getDocumentsWith({
+    required String key,
+    required String value,
+  }) async {
     _assertInitialized();
     try {
       final Map<dynamic, dynamic> result = await (_methodChannel
               .invokeMapMethod('getDocumentsWithKey',
                   {"db": this.dbName, "key": key, "value": value})) ??
           {};
-      List<Document>? documents = result["docs"] != null
+      List<Document> documents = result["docs"] != null
           ? result["docs"]
               .map<Document>((v) => Document(v['doc'], v['id']))
               .toList()
-          : null;
+          : [];
       return documents;
     } on PlatformException {
       throw 'unable to get the document with key $key, value $value';
     }
   }
 
-  Future<List<Document>?> getAllDocuments() async {
+  Future<List<Document>> getAllDocuments() async {
     _assertInitialized();
     try {
       final result = await _methodChannel
               .invokeMapMethod('getAllDocuments', {"db": this.dbName}) ??
           {};
-      List<Document>? documents = result["docs"] != null
+      List<Document> documents = result["docs"] != null
           ? result["docs"]
               .map<Document>((v) => Document(v['doc'], v['id']))
               .toList()
-          : null;
+          : [];
       return documents;
     } on PlatformException {
       throw 'unable to get all documents';
     }
   }
 
-  Future<String?> addAttachment(
-      String documentId, String contentType, String filePath) async {
+  Future<String> addAttachment(
+    String documentId,
+    String contentType,
+    String filePath,
+  ) async {
     _assertInitialized();
     try {
       final String? result =
@@ -116,7 +120,7 @@ abstract class Fluttercouch {
         "contentType": contentType,
         "filePath": filePath
       });
-      return result;
+      return result!;
     } on PlatformException {
       throw 'unable to add attachment $filePath';
     }
@@ -263,7 +267,7 @@ abstract class Fluttercouch {
     }
   }
 
-  Future<Map<dynamic, dynamic>?> _getDocumentWithId(String _id) async {
+  Future<Map<dynamic, dynamic>> _getDocumentWithId(String _id) async {
     _assertInitialized();
     try {
       final result = await _methodChannel

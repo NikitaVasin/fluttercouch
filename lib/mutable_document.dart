@@ -1,18 +1,9 @@
 import 'package:fluttercouch/document.dart';
 
 class MutableDocument extends Document {
+  MutableDocument({Map<dynamic, dynamic>? map, String? id}) : super(map, id);
 
-  MutableDocument({Map<dynamic, dynamic>? map, String? id}) {
-    if (map != null) {
-      super.internalState = super.stringMapFromDynamic(map);
-    } else {
-      super.internalState = Map<String, dynamic>();
-    }
-
-    id != null ? super.id = id : super.id = "random UUID";
-  }
-
-  setValue(String key, Object value) {
+  setValue(String key, Object? value) {
     if (value != null) {
       super.internalState![key] = value;
     }
