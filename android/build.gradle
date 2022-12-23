@@ -17,6 +17,7 @@ rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://mobile.maven.couchbase.com/maven2/dev/' }
 //        flatDir {
 //            dirs 'libs'
 //        }
@@ -34,6 +35,11 @@ android {
     }
     lintOptions {
         disable 'InvalidPackage'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     dependencies {
